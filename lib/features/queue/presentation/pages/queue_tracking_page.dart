@@ -204,24 +204,24 @@ class _CircularProgressTimerState extends State<_CircularProgressTimer> {
     });
   }
 
+  int _lastKnownProviderWait = -1;
+  DateTime? _lastSyncTime;
+
   void _calculateTimeLeft() {
-    if (widget.createdAt == null) {
+    if (widget.estimatedWaitMinutes != _lastKnownProviderWait) {
+      // Provider gave us a new exact wait time based on queue changes
+      _lastKnownProviderWait = widget.estimatedWaitMinutes;
+      _lastSyncTime = DateTime.now();
       _minutesLeft = widget.estimatedWaitMinutes;
-      return;
-    }
-    
-    try {
-      final createdTime = DateTime.parse(widget.createdAt!).toLocal();
-      final targetTime = createdTime.add(Duration(minutes: widget.estimatedWaitMinutes));
-      final now = DateTime.now();
-      
-      final diff = targetTime.difference(now).inMinutes;
-      _minutesLeft = diff > 0 ? diff : 0;
-    } catch (e) {
-      _minutesLeft = widget.estimatedWaitMinutes;
+    } else if (_lastSyncTime != null) {
+      // Tick down locally based on elapsed time since last sync
+      final elapsedMinutes = DateTime.now().difference(_lastSyncTime!).inMinutes;
+      _minutesLeft = widget.estimatedWaitMinutes - elapsedMinutes;
     }
 
-    if (_minutesLeft <= 0 && !_isFinished) {
+    if (_minutesLeft < 0) _minutesLeft = 0;
+
+    if (_minutesLeft <= 0 && !_isFinished && widget.estimatedWaitMinutes > 0) {
       _isFinished = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _showFinishedDialog();

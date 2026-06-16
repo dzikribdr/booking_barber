@@ -63,7 +63,11 @@ class AuthProvider extends ChangeNotifier {
     _errorMessage = null;
 
     try {
-      await _supabase.signInWithEmail(email, password);
+      final res = await _supabase.signInWithEmail(email, password);
+      if (res.user != null) {
+        _user = res.user;
+        await _fetchProfile(res.user!.id);
+      }
       return true;
     } catch (e) {
       _errorMessage = e is AuthException ? e.message : e.toString();
@@ -80,6 +84,11 @@ class AuthProvider extends ChangeNotifier {
     try {
       final res = await _supabase.signUpWithEmail(email, password);
       if (res.user != null) {
+        // Check if the user already exists (Supabase returns a fake user with empty identities for security)
+        if (res.user!.identities != null && res.user!.identities!.isEmpty) {
+          throw const AuthException('Email already registered. Please log in.');
+        }
+
         // Create profile in DB
         await _supabase.client.from('profiles').insert({
           'id': res.user!.id,

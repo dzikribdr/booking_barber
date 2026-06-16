@@ -16,6 +16,8 @@ import '../../features/services/presentation/pages/beard_trim_page.dart';
 import '../../features/booking/presentation/pages/booking_history_page.dart';
 import '../../features/profile/presentation/pages/profile_settings_page.dart';
 
+import '../../features/profile/presentation/pages/style_vault_page.dart';
+
 class AppRouter {
   static final router = GoRouter(
     initialLocation: '/',
@@ -109,6 +111,10 @@ class AppRouter {
           final status = state.uri.queryParameters['status'];
           return BookingHistoryPage(statusFilter: status);
         },
+      ),
+      GoRoute(
+        path: '/style-vault',
+        builder: (context, state) => const StyleVaultPage(),
       ),
     ],
   );

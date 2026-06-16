@@ -3,14 +3,34 @@ import '../../../../core/theme/app_colors.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:booking_barber/features/auth/presentation/providers/auth_provider.dart';
+import 'package:booking_barber/features/profile/presentation/providers/profile_provider.dart';
 
-class ProfileSettingsPage extends StatelessWidget {
+class ProfileSettingsPage extends StatefulWidget {
   const ProfileSettingsPage({super.key});
+
+  @override
+  State<ProfileSettingsPage> createState() => _ProfileSettingsPageState();
+}
+
+class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = context.read<AuthProvider?>();
+      final user = authProvider?.user;
+      if (user != null) {
+        context.read<ProfileProvider>().fetchProfile(user.id);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider?>();
+    final profileProvider = context.watch<ProfileProvider>();
     final user = authProvider?.user;
+    final profile = profileProvider.profile;
     
     // Real data from Supabase
     final email = user?.email ?? '-';
@@ -65,6 +85,28 @@ class ProfileSettingsPage extends StatelessWidget {
               _buildInfoTile(context, 'Nama Lengkap', fullName, Icons.person_outline),
               _buildInfoTile(context, 'Username', username, Icons.alternate_email),
               _buildInfoTile(context, 'Email', email, Icons.email_outlined),
+              
+              const SizedBox(height: 24),
+              _buildSectionTitle(context, 'Preferensi Pelanggan'),
+              Card(
+                margin: const EdgeInsets.only(bottom: 8.0),
+                color: AppColors.charcoalGray,
+                child: SwitchListTile(
+                  title: Text('Silent Mode (Hindari Obrolan)', style: Theme.of(context).textTheme.bodyLarge),
+                  subtitle: Text('Kapster akan lebih fokus memotong tanpa banyak mengobrol', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.onSurfaceVariantFull)),
+                  value: profile?.isSilentMode ?? false,
+                  activeColor: AppColors.primary,
+                  onChanged: (value) {
+                    context.read<ProfileProvider>().toggleSilentMode(value);
+                  },
+                  secondary: const Icon(Icons.volume_off, color: AppColors.primary),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+              ),
+              
+              const SizedBox(height: 24),
+              _buildSectionTitle(context, 'Personalisasi'),
+              _buildSettingsTile(context, 'Style Vault (Galeri Gaya)', Icons.photo_library_outlined, onTap: () => context.push('/style-vault')),
               
               const SizedBox(height: 24),
               _buildSectionTitle(context, 'Aktivitas'),

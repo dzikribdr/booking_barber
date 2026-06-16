@@ -2,6 +2,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 
+import '../../../../features/booking/presentation/widgets/walk_in_dialog.dart';
+
 class BarberDashboardPage extends StatelessWidget {
   const BarberDashboardPage({super.key});
 
@@ -21,6 +23,22 @@ class BarberDashboardPage extends StatelessWidget {
               ),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.person_add_alt_1, color: AppColors.primary),
+            tooltip: 'Input Walk-In',
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => const WalkInDialog(),
+              ).then((success) {
+                if (success == true) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Berhasil menambahkan pelanggan Walk-In!'), backgroundColor: Colors.green),
+                  );
+                }
+              });
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.info_outline, color: AppColors.primary),
             onPressed: () {},

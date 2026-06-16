@@ -16,6 +16,8 @@ class BookingSelectionPage extends StatefulWidget {
 class _BookingSelectionPageState extends State<BookingSelectionPage> {
   int _selectedDateIndex = 0; 
   String _selectedTime = ''; 
+  bool _isForOther = false;
+  final TextEditingController _guestNameController = TextEditingController();
 
   late final List<Map<String, String>> _dates;
 
@@ -23,6 +25,12 @@ class _BookingSelectionPageState extends State<BookingSelectionPage> {
   void initState() {
     super.initState();
     _generateDates();
+  }
+
+  @override
+  void dispose() {
+    _guestNameController.dispose();
+    super.dispose();
   }
 
   void _generateDates() {
@@ -83,6 +91,8 @@ class _BookingSelectionPageState extends State<BookingSelectionPage> {
       bookingDate: dateStr,
       bookingTime: '$_selectedTime:00',
       totalAmount: price,
+      isForOther: _isForOther,
+      guestName: _isForOther ? _guestNameController.text.trim() : null,
     );
 
     if (errorMsg == null && mounted) {
@@ -263,6 +273,69 @@ class _BookingSelectionPageState extends State<BookingSelectionPage> {
                   ),
                   const SizedBox(height: 16),
                   _buildTimeGrid(_afternoonSlots),
+                  
+                  const SizedBox(height: 32),
+                  
+                  // Booking for Someone Else Section
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.charcoalGray,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: _isForOther ? AppColors.primary : Colors.transparent),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        CheckboxListTile(
+                          title: Text(
+                            'Booking untuk orang lain?',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                          subtitle: Text(
+                            'Pilih ini jika Anda memesan untuk teman atau anak Anda.',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: AppColors.onSurfaceVariantFull,
+                                ),
+                          ),
+                          value: _isForOther,
+                          activeColor: AppColors.primary,
+                          checkColor: Colors.black,
+                          contentPadding: EdgeInsets.zero,
+                          controlAffinity: ListTileControlAffinity.leading,
+                          onChanged: (value) {
+                            setState(() {
+                              _isForOther = value ?? false;
+                            });
+                          },
+                        ),
+                        if (_isForOther) ...[
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: _guestNameController,
+                            style: const TextStyle(color: Colors.white),
+                            decoration: InputDecoration(
+                              labelText: 'Nama Pelanggan (Tamu)',
+                              labelStyle: const TextStyle(color: AppColors.onSurfaceVariantFull),
+                              filled: true,
+                              fillColor: AppColors.matteBlack,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: AppColors.primary),
+                              ),
+                              prefixIcon: const Icon(Icons.person, color: AppColors.onSurfaceVariantFull),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),

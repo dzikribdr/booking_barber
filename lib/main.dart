@@ -10,6 +10,10 @@ import 'features/auth/presentation/providers/auth_provider.dart';
 import 'features/services/presentation/providers/service_provider.dart';
 import 'features/booking/presentation/providers/booking_provider.dart';
 import 'features/queue/presentation/providers/queue_provider.dart';
+import 'features/admin/presentation/providers/admin_provider.dart';
+
+import 'features/profile/presentation/providers/profile_provider.dart';
+import 'features/profile/presentation/providers/style_vault_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -66,6 +70,18 @@ void main() async {
         ChangeNotifierProxyProvider<SupabaseService?, QueueProvider?>(
           create: (_) => null,
           update: (_, supabase, __) => supabase != null ? QueueProvider(supabase) : null,
+        ),
+        // Admin Provider
+        ChangeNotifierProvider<AdminProvider>(
+          create: (_) => AdminProvider(),
+        ),
+        // Profile Provider
+        ChangeNotifierProvider<ProfileProvider>(
+          create: (_) => ProfileProvider(),
+        ),
+        // Style Vault Provider
+        ChangeNotifierProvider<StyleVaultProvider>(
+          create: (_) => StyleVaultProvider(),
         ),
       ],
       child: const MyApp(),

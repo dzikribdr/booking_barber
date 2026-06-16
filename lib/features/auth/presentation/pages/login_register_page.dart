@@ -54,7 +54,11 @@ class _LoginRegisterPageState extends State<LoginRegisterPage> {
     }
 
     if (success && mounted) {
-      context.go('/home');
+      if (authProvider.role == 'admin' || authProvider.role == 'super_admin') {
+        context.go('/admin-dashboard');
+      } else {
+        context.go('/home');
+      }
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

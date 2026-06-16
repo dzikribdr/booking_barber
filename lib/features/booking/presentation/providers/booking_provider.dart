@@ -22,24 +22,46 @@ class BookingProvider extends ChangeNotifier {
     required String bookingDate,
     required String bookingTime,
     required double totalAmount,
+    bool isForOther = false,
+    String? guestName,
+    String? walkInName,
   }) async {
     _isLoading = true;
     notifyListeners();
 
     try {
       final user = _supabase.currentUser;
-      if (user == null) throw Exception("User not logged in");
+      if (user == null && walkInName == null) throw Exception("User not logged in");
 
       // Combine date and time to ISO 8601 format for timestamp with time zone
-      final combinedDateTime = '${bookingDate}T${bookingTime}Z';
+      final combinedDateTimeStr = '${bookingDate}T${bookingTime}Z';
+      final startDateTime = DateTime.parse(combinedDateTimeStr);
+      
+      // Calculate end time
+      final duration = _selectedService?.durationMinutes ?? 30;
+      final endDateTime = startDateTime.add(Duration(minutes: duration));
 
       // Insert booking matching the SQL schema
-      final bookingResponse = await _supabase.client.from('bookings').insert({
-        'customer_id': user.id,
+      final insertData = {
         'service_id': serviceId,
-        'booking_time': combinedDateTime,
+        'booking_time': combinedDateTimeStr,
+        'end_time': endDateTime.toIso8601String(),
         'status': 'confirmed', // Auto-confirm for demo purposes
-      }).select().single();
+        'total_price': totalAmount,
+        'is_for_other': isForOther,
+      };
+
+      if (walkInName != null) {
+        insertData['walk_in_name'] = walkInName;
+        // customer_id is left null for walk-in if your DB allows it
+      } else {
+        insertData['customer_id'] = user!.id;
+        if (guestName != null) {
+          insertData['guest_name'] = guestName;
+        }
+      }
+
+      final bookingResponse = await _supabase.client.from('bookings').insert(insertData).select().single();
 
       // Get the highest queue number for today to make it sequential
       final today = DateTime.now().toUtc();

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import 'package:provider/provider.dart';
 import '../../../queue/presentation/providers/queue_provider.dart';
+import '../../../../features/profile/presentation/providers/profile_provider.dart';
 
 class PaymentPage extends StatelessWidget {
   const PaymentPage({super.key});
@@ -94,6 +95,9 @@ class _InvoiceSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final profileProvider = context.watch<ProfileProvider?>();
+    final isSilentMode = profileProvider?.profile?.isSilentMode ?? false;
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -115,6 +119,25 @@ class _InvoiceSummaryCard extends StatelessWidget {
           _buildInvoiceLine(context, 'Signature Shave', '\$35.00'),
           const SizedBox(height: 12),
           _buildInvoiceLine(context, 'Haircut (Skin Fade)', '\$30.00'),
+          
+          if (isSilentMode) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.primaryContainer,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.volume_off, color: AppColors.primary, size: 16),
+                  const SizedBox(width: 8),
+                  Text('Silent Mode Requested', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.primary)),
+                ],
+              ),
+            ),
+          ],
+          
           const SizedBox(height: 24),
           Container(height: 1, color: AppColors.outlineVariant),
           const SizedBox(height: 24),

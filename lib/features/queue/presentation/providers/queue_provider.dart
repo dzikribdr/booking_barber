@@ -17,55 +17,82 @@ class QueueProvider extends ChangeNotifier {
   Future<void> fetchQueue() async {
     try {
       final user = _supabase.currentUser;
-      if (user == null) {
-        return;
-      }
+      if (user == null) return;
 
-      // Find the most recent active booking for this customer
-      final bookings = await _supabase.client
-          .from('bookings')
-          .select('id')
-          .eq('customer_id', user.id)
-          .inFilter('status', ['pending', 'confirmed'])
-          .order('created_at', ascending: false)
-          .limit(1);
+      // Listen to bookings table changes
+      _subscription = _supabase.client
+          .channel('public:bookings')
+          .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: 'bookings',
+            callback: (payload) {
+              _fetchAndCalculate();
+            },
+          )
+          .subscribe();
 
-      if (bookings.isNotEmpty) {
-        final bookingId = bookings[0]['id'];
-        
-        // Listen to live queue updates using Supabase Realtime
-        _subscription = _supabase.client
-            .channel('public:queues')
-            .onPostgresChanges(
-              event: PostgresChangeEvent.all,
-              schema: 'public',
-              table: 'queues',
-              filter: PostgresChangeFilter(
-                type: PostgresChangeFilterType.eq,
-                column: 'booking_id',
-                value: bookingId,
-              ),
-              callback: (payload) {
-                _currentQueue = payload.newRecord;
-                notifyListeners();
-              },
-            )
-            .subscribe();
-
-        // Initial fetch to get the current state
-        final queues = await _supabase.client
-            .from('queues')
-            .select()
-            .eq('booking_id', bookingId)
-            .limit(1);
-            
-        if (queues.isNotEmpty) {
-          _currentQueue = queues[0];
-          notifyListeners();
-        }
-      }
+      await _fetchAndCalculate();
     } catch (e) {
       debugPrint("Queue fetch error: $e");
+    }
+  }
+
+  Future<void> _fetchAndCalculate() async {
+    final user = _supabase.currentUser;
+    if (user == null) return;
+
+    // Get today's active bookings
+    final todayStr = DateTime.now().toUtc().toIso8601String().substring(0, 10);
+    final response = await _supabase.client
+        .from('bookings')
+        .select()
+        .gte('booking_time', '${todayStr}T00:00:00Z')
+        .lte('booking_time', '${todayStr}T23:59:59Z')
+        .inFilter('status', ['confirmed', 'in-progress'])
+        .order('booking_time', ascending: true);
+
+    final List<dynamic> allBookings = response;
+    
+    // Find my booking
+    final myBookingIndex = allBookings.indexWhere((b) => b['customer_id'] == user.id);
+    
+    if (myBookingIndex != -1) {
+      final myBooking = allBookings[myBookingIndex];
+      int waitMinutes = 0;
+      int servingIndex = 0;
+      
+      final now = DateTime.now();
+      
+      if (myBookingIndex == 0) {
+        // I am next
+        final bookingTime = DateTime.parse(myBooking['booking_time']).toLocal();
+        waitMinutes = bookingTime.difference(now).inMinutes;
+        servingIndex = 1; // You are the first
+      } else {
+        // Find the person right before me
+        final prevBooking = allBookings[myBookingIndex - 1];
+        if (prevBooking['end_time'] != null) {
+          final prevEndTime = DateTime.parse(prevBooking['end_time']).toLocal();
+          waitMinutes = prevEndTime.difference(now).inMinutes;
+        } else {
+          waitMinutes = 15 * myBookingIndex; // fallback
+        }
+        servingIndex = myBookingIndex + 1;
+      }
+      
+      if (waitMinutes < 0) waitMinutes = 0; // Don't show negative wait time
+      
+      _currentQueue = {
+        'booking_id': myBooking['id'],
+        'queue_number': servingIndex,
+        'estimated_wait_minutes': waitMinutes,
+        'created_at': myBooking['created_at'],
+      };
+      notifyListeners();
+    } else {
+      _currentQueue = null;
+      notifyListeners();
     }
   }
 
