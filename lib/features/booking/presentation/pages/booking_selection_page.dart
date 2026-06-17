@@ -16,6 +16,7 @@ class BookingSelectionPage extends StatefulWidget {
 class _BookingSelectionPageState extends State<BookingSelectionPage> {
   int _selectedDateIndex = 0; 
   String _selectedTime = ''; 
+  String? _selectedBarberId;
   bool _isForOther = false;
   final TextEditingController _guestNameController = TextEditingController();
 
@@ -25,6 +26,9 @@ class _BookingSelectionPageState extends State<BookingSelectionPage> {
   void initState() {
     super.initState();
     _generateDates();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<BookingProvider?>()?.fetchActiveBarbers();
+    });
   }
 
   @override
@@ -82,12 +86,24 @@ class _BookingSelectionPageState extends State<BookingSelectionPage> {
       return;
     }
 
+    if (_selectedBarberId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a Barber.'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
     final dateStr = _dates[_selectedDateIndex]['fullDate']!;
     final serviceId = selectedService.id;
     final price = selectedService.price;
 
     final errorMsg = await bookingProvider.createBooking(
       serviceId: serviceId,
+      barberId: _selectedBarberId!,
       bookingDate: dateStr,
       bookingTime: '$_selectedTime:00',
       totalAmount: price,
@@ -190,13 +206,37 @@ class _BookingSelectionPageState extends State<BookingSelectionPage> {
                               color: AppColors.onSurfaceVariantFull,
                             ),
                       ),
-                      Text(
-                        'Marcus',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
+                      if (bookingProvider != null && bookingProvider.activeBarbers.isNotEmpty)
+                        Expanded(
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: _selectedBarberId,
+                              hint: Text('Select Barber', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.onSurfaceVariantFull)),
+                              dropdownColor: AppColors.charcoalGray,
+                              icon: const Icon(Icons.arrow_drop_down, color: AppColors.primary),
+                              isDense: true,
+                              items: bookingProvider.activeBarbers.map((barber) {
+                                return DropdownMenuItem<String>(
+                                  value: barber['id'] as String,
+                                  child: Text(
+                                    barber['name'] ?? 'Unknown',
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                setState(() {
+                                  _selectedBarberId = value;
+                                });
+                              },
                             ),
-                      ),
+                          ),
+                        )
+                      else
+                        Text('Loading barbers...', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.onSurfaceVariantFull)),
                     ],
                   ),
                   const SizedBox(height: 32),
@@ -350,7 +390,7 @@ class _BookingSelectionPageState extends State<BookingSelectionPage> {
               width: double.infinity,
               height: 56,
               child: ElevatedButton(
-                onPressed: (_selectedTime.isNotEmpty && !isLoading) ? _handleBooking : null,
+                onPressed: (_selectedTime.isNotEmpty && _selectedBarberId != null && !isLoading) ? _handleBooking : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.black,

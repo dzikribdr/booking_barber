@@ -15,6 +15,15 @@ class _WalkInDialogState extends State<WalkInDialog> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _priceController = TextEditingController(text: '30'); // Default price
   bool _isLoading = false;
+  String? _selectedBarberId;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<BookingProvider?>()?.fetchActiveBarbers();
+    });
+  }
 
   @override
   void dispose() {
@@ -27,9 +36,9 @@ class _WalkInDialogState extends State<WalkInDialog> {
     final name = _nameController.text.trim();
     final priceStr = _priceController.text.trim();
     
-    if (name.isEmpty || priceStr.isEmpty) {
+    if (name.isEmpty || priceStr.isEmpty || _selectedBarberId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Mohon lengkapi nama dan estimasi harga')),
+        const SnackBar(content: Text('Mohon lengkapi nama, harga, dan pilih Barber')),
       );
       return;
     }
@@ -57,6 +66,7 @@ class _WalkInDialogState extends State<WalkInDialog> {
 
     final errorMsg = await bookingProvider?.createBooking(
       serviceId: serviceId,
+      barberId: _selectedBarberId!,
       bookingDate: dateStr,
       bookingTime: timeStr,
       totalAmount: price,
@@ -113,6 +123,44 @@ class _WalkInDialogState extends State<WalkInDialog> {
                 fillColor: AppColors.matteBlack,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
               ),
+            ),
+            const SizedBox(height: 16),
+            Consumer<BookingProvider?>(
+              builder: (context, provider, child) {
+                if (provider == null || provider.activeBarbers.isEmpty) {
+                  return const Text('Loading barbers...', style: TextStyle(color: AppColors.onSurfaceVariantFull));
+                }
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: AppColors.matteBlack,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      isExpanded: true,
+                      value: _selectedBarberId,
+                      hint: const Text('Pilih Barber', style: TextStyle(color: AppColors.onSurfaceVariantFull)),
+                      dropdownColor: AppColors.charcoalGray,
+                      icon: const Icon(Icons.arrow_drop_down, color: AppColors.primary),
+                      items: provider.activeBarbers.map((barber) {
+                        return DropdownMenuItem<String>(
+                          value: barber['id'] as String,
+                          child: Text(
+                            barber['name'] ?? 'Unknown',
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedBarberId = value;
+                        });
+                      },
+                    ),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 32),
             Row(

@@ -113,7 +113,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
               _buildSettingsTile(context, 'Riwayat Booking', Icons.history, onTap: () => context.push('/history?status=all')),
               _buildSettingsTile(context, 'Booking Berlangsung', Icons.pending_actions, onTap: () => context.push('/history?status=ongoing')),
               _buildSettingsTile(context, 'Booking Dibatalkan', Icons.cancel_outlined, onTap: () => context.push('/history?status=cancelled')),
-              _buildSettingsTile(context, 'Riwayat Transaksi', Icons.receipt_long_outlined, onTap: () => context.push('/history?status=completed')),
+              _buildSettingsTile(context, 'Riwayat Transaksi', Icons.receipt_long_outlined, onTap: () => context.push('/history?status=transaction')),
               
               const SizedBox(height: 40),
               

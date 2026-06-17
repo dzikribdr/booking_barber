@@ -19,6 +19,7 @@ class BookingProvider extends ChangeNotifier {
 
   Future<String?> createBooking({
     required String serviceId,
+    required String barberId,
     required String bookingDate,
     required String bookingTime,
     required double totalAmount,
@@ -44,6 +45,7 @@ class BookingProvider extends ChangeNotifier {
       // Insert booking matching the SQL schema
       final insertData = {
         'service_id': serviceId,
+        'barber_id': barberId,
         'booking_time': combinedDateTimeStr,
         'end_time': endDateTime.toIso8601String(),
         'status': 'confirmed', // Auto-confirm for demo purposes
@@ -99,6 +101,22 @@ class BookingProvider extends ChangeNotifier {
   List<Map<String, dynamic>> _bookingHistory = [];
   List<Map<String, dynamic>> get bookingHistory => _bookingHistory;
 
+  List<Map<String, dynamic>> _activeBarbers = [];
+  List<Map<String, dynamic>> get activeBarbers => _activeBarbers;
+
+  Future<void> fetchActiveBarbers() async {
+    try {
+      final data = await _supabase.client
+          .from('barbers')
+          .select()
+          .eq('status', 'active');
+      _activeBarbers = List<Map<String, dynamic>>.from(data);
+      notifyListeners();
+    } catch (e) {
+      debugPrint("Error fetching barbers: $e");
+    }
+  }
+
   Future<void> fetchBookingHistory({String? statusFilter}) async {
     _isLoading = true;
     notifyListeners();
@@ -115,6 +133,8 @@ class BookingProvider extends ChangeNotifier {
       if (statusFilter != null && statusFilter != 'all') {
         if (statusFilter == 'ongoing') {
           filterBuilder = filterBuilder.inFilter('status', ['pending', 'confirmed']);
+        } else if (statusFilter == 'transaction') {
+          // Show all bookings for transaction history
         } else {
           filterBuilder = filterBuilder.eq('status', statusFilter);
         }

@@ -27,8 +27,10 @@ class _BookingHistoryPageState extends State<BookingHistoryPage> {
         return 'Booking Berlangsung';
       case 'cancelled':
         return 'Booking Dibatalkan';
-      case 'completed':
+      case 'transaction':
         return 'Riwayat Transaksi';
+      case 'completed':
+        return 'Riwayat Selesai';
       default:
         return 'Riwayat Booking';
     }
@@ -75,6 +77,8 @@ class _BookingHistoryPageState extends State<BookingHistoryPage> {
                             final serviceName = service?['name'] ?? 'Unknown Service';
                             final price = service?['price'] ?? 0;
                             final status = booking['status'] ?? 'unknown';
+                            final isTransactionView = widget.statusFilter == 'transaction';
+                            final paymentMethod = booking['payment_method'] ?? 'Cash/QRIS';
                             
                             // Format date
                             final bookingTimeStr = booking['booking_time'] as String?;
@@ -99,6 +103,8 @@ class _BookingHistoryPageState extends State<BookingHistoryPage> {
                                 time: timeStr,
                                 price: '\$${price.toStringAsFixed(2)}',
                                 status: status.toString().toUpperCase(),
+                                paymentMethod: paymentMethod,
+                                isTransactionView: isTransactionView,
                               ),
                             );
                           },
@@ -118,6 +124,8 @@ class _HistoryCard extends StatelessWidget {
   final String time;
   final String price;
   final String status;
+  final String paymentMethod;
+  final bool isTransactionView;
 
   const _HistoryCard({
     required this.service,
@@ -126,6 +134,8 @@ class _HistoryCard extends StatelessWidget {
     required this.time,
     required this.price,
     required this.status,
+    this.paymentMethod = 'Cash/QRIS',
+    this.isTransactionView = false,
   });
 
   @override
@@ -192,10 +202,20 @@ class _HistoryCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Total', style: Theme.of(context).textTheme.bodyMedium),
+                Text('Harga Total', style: Theme.of(context).textTheme.bodyMedium),
                 Text(price, style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 18, color: AppColors.primary)),
               ],
             ),
+            if (isTransactionView) ...[
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Metode Pembayaran', style: Theme.of(context).textTheme.bodyMedium),
+                  Text(paymentMethod, style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold, color: AppColors.onSurfaceVariantFull)),
+                ],
+              ),
+            ],
           ],
         ),
       ),
