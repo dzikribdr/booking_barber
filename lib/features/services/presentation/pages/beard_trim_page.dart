@@ -18,7 +18,7 @@ class BeardTrimPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.background.withOpacity(0.8),
+        backgroundColor: AppColors.background.withValues(alpha: 0.8),
         flexibleSpace: ClipRect(
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
@@ -74,7 +74,7 @@ class _BeardServiceCard extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [AppColors.charcoalGray.withOpacity(0.3), AppColors.matteBlack],
+                colors: [AppColors.charcoalGray.withValues(alpha: 0.3), AppColors.matteBlack],
               ),
             ),
             child: const Center(child: Icon(Icons.face, size: 50, color: Colors.white12)),

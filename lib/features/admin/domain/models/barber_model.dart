@@ -6,6 +6,8 @@ class BarberModel {
   final String startTime;
   final String endTime;
   final String status;
+  final double rating;
+  final int reviewsCount;
   final DateTime? createdAt;
 
   BarberModel({
@@ -16,6 +18,8 @@ class BarberModel {
     required this.startTime,
     required this.endTime,
     required this.status,
+    this.rating = 0.0,
+    this.reviewsCount = 0,
     this.createdAt,
   });
 
@@ -28,6 +32,8 @@ class BarberModel {
       startTime: json['start_time'] ?? '09:00:00',
       endTime: json['end_time'] ?? '21:00:00',
       status: json['status'] ?? 'active',
+      rating: (json['rating'] ?? 0.0).toDouble(),
+      reviewsCount: json['reviews_count'] ?? 0,
       createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
     );
   }
@@ -41,6 +47,8 @@ class BarberModel {
       'start_time': startTime,
       'end_time': endTime,
       'status': status,
+      'rating': rating,
+      'reviews_count': reviewsCount,
     };
   }
 
@@ -52,6 +60,8 @@ class BarberModel {
     String? startTime,
     String? endTime,
     String? status,
+    double? rating,
+    int? reviewsCount,
     DateTime? createdAt,
   }) {
     return BarberModel(
@@ -62,6 +72,8 @@ class BarberModel {
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,
       status: status ?? this.status,
+      rating: rating ?? this.rating,
+      reviewsCount: reviewsCount ?? this.reviewsCount,
       createdAt: createdAt ?? this.createdAt,
     );
   }

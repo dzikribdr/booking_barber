@@ -46,7 +46,7 @@ class QueueProvider extends ChangeNotifier {
     final todayStr = DateTime.now().toUtc().toIso8601String().substring(0, 10);
     final response = await _supabase.client
         .from('bookings')
-        .select()
+        .select('*, barbers(name), services(name)')
         .gte('booking_time', '${todayStr}T00:00:00Z')
         .lte('booking_time', '${todayStr}T23:59:59Z')
         .inFilter('status', ['confirmed', 'in-progress'])
@@ -83,11 +83,16 @@ class QueueProvider extends ChangeNotifier {
       
       if (waitMinutes < 0) waitMinutes = 0; // Don't show negative wait time
       
+      final barberName = myBooking['barbers'] != null ? myBooking['barbers']['name'] : 'Unknown Barber';
+      final serviceName = myBooking['services'] != null ? myBooking['services']['name'] : 'Unknown Service';
+
       _currentQueue = {
         'booking_id': myBooking['id'],
         'queue_number': servingIndex,
         'estimated_wait_minutes': waitMinutes,
         'created_at': myBooking['created_at'],
+        'barber_name': barberName,
+        'service_name': serviceName,
       };
       notifyListeners();
     } else {

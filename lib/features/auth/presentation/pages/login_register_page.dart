@@ -93,7 +93,7 @@ class _LoginRegisterPageState extends State<LoginRegisterPage> {
                       shadows: [
                         Shadow(
                           blurRadius: 15.0,
-                          color: AppColors.primary.withOpacity(0.3),
+                          color: AppColors.primary.withValues(alpha: 0.3),
                         ),
                       ],
                     ),

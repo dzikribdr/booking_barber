@@ -1,5 +1,6 @@
 class ServiceModel {
   final String id;
+  final String category;
   final String name;
   final String? description;
   final int durationMinutes;
@@ -8,6 +9,7 @@ class ServiceModel {
 
   ServiceModel({
     required this.id,
+    required this.category,
     required this.name,
     this.description,
     required this.durationMinutes,
@@ -18,6 +20,7 @@ class ServiceModel {
   factory ServiceModel.fromJson(Map<String, dynamic> json) {
     return ServiceModel(
       id: json['id'] ?? '',
+      category: json['category'] ?? 'Haircut',
       name: json['name'] ?? '',
       description: json['description'],
       durationMinutes: json['duration_minutes'] ?? 30,
@@ -29,6 +32,7 @@ class ServiceModel {
   Map<String, dynamic> toJson() {
     return {
       if (id.isNotEmpty) 'id': id,
+      'category': category,
       'name': name,
       'description': description,
       'duration_minutes': durationMinutes,
@@ -38,6 +42,7 @@ class ServiceModel {
 
   ServiceModel copyWith({
     String? id,
+    String? category,
     String? name,
     String? description,
     int? durationMinutes,
@@ -46,6 +51,7 @@ class ServiceModel {
   }) {
     return ServiceModel(
       id: id ?? this.id,
+      category: category ?? this.category,
       name: name ?? this.name,
       description: description ?? this.description,
       durationMinutes: durationMinutes ?? this.durationMinutes,

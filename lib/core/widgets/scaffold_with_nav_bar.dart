@@ -26,7 +26,7 @@ class ScaffoldWithNavBar extends StatelessWidget {
           color: AppColors.background,
           border: Border(
             top: BorderSide(
-              color: Colors.white.withOpacity(0.05),
+              color: Colors.white.withValues(alpha: 0.05),
               width: 1.0,
             ),
           ),

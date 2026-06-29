@@ -50,7 +50,7 @@ class BookingModel {
       status: json['status'] ?? 'pending',
       totalPrice: json['total_price'] != null ? (json['total_price']).toDouble() : null,
       createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
-      customerName: json['profiles']?['full_name'] ?? 'Walk-in',
+      customerName: json['profiles']?['full_name'] ?? json['walk_in_name'] ?? 'Walk-in',
       walkInName: json['walk_in_name'],
       endTime: json['end_time'] != null ? DateTime.parse(json['end_time']) : null,
       isForOther: json['is_for_other'] ?? false,

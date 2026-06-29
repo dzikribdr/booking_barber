@@ -50,7 +50,7 @@ class PaymentPage extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(24.0),
                   decoration: BoxDecoration(
-                    color: AppColors.charcoalGray.withOpacity(0.8),
+                    color: AppColors.charcoalGray.withValues(alpha: 0.8),
                     border: const Border(top: BorderSide(color: Colors.white10)),
                   ),
                   child: SafeArea(

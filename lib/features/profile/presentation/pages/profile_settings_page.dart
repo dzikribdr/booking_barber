@@ -95,7 +95,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
                   title: Text('Silent Mode (Hindari Obrolan)', style: Theme.of(context).textTheme.bodyLarge),
                   subtitle: Text('Kapster akan lebih fokus memotong tanpa banyak mengobrol', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.onSurfaceVariantFull)),
                   value: profile?.isSilentMode ?? false,
-                  activeColor: AppColors.primary,
+                  activeThumbColor: AppColors.primary,
                   onChanged: (value) {
                     context.read<ProfileProvider>().toggleSilentMode(value);
                   },

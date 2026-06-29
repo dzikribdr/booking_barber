@@ -12,6 +12,15 @@ class ServiceManagementPage extends StatelessWidget {
     final provider = context.watch<AdminProvider>();
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: const Text('Services', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppColors.onSurfaceVariantFull),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => ServiceDialog.show(context),
         backgroundColor: AppColors.primary,

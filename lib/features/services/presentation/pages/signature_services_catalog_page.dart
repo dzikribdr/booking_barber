@@ -27,7 +27,7 @@ class _SignatureServicesCatalogPageState extends State<SignatureServicesCatalogP
         slivers: [
           // 1. Sleek Top App Bar with Glassmorphism
           SliverAppBar(
-            backgroundColor: AppColors.background.withOpacity(0.9),
+            backgroundColor: AppColors.background.withValues(alpha: 0.9),
             pinned: true,
             elevation: 0,
             flexibleSpace: ClipRRect(

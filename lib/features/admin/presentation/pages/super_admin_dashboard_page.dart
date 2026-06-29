@@ -4,6 +4,9 @@ import '../../../../core/theme/app_colors.dart';
 import '../providers/admin_provider.dart';
 import 'staff_management_page.dart';
 import 'service_management_page.dart';
+import '../../../booking/presentation/widgets/walk_in_dialog.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import 'package:go_router/go_router.dart';
 
 class SuperAdminDashboardPage extends StatefulWidget {
   const SuperAdminDashboardPage({super.key});
@@ -30,6 +33,7 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
       const StaffManagementPage(),
       const ServiceManagementPage(),
       const _BookingManagementTab(),
+      const _ProfileTab(),
     ];
 
     return Scaffold(
@@ -80,6 +84,7 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
           BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Staff'),
           BottomNavigationBarItem(icon: Icon(Icons.cut), label: 'Services'),
           BottomNavigationBarItem(icon: Icon(Icons.calendar_month), label: 'Bookings'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
       ),
     );
@@ -149,7 +154,7 @@ class _DashboardTabState extends State<_DashboardTab> {
           // Metrics Stack
           _MetricCard(
             title: 'TOTAL REVENUE',
-            value: '\$${provider.dailyRevenue.toStringAsFixed(2)}',
+            value: '\$${provider.getRevenue(_selectedFilter).toStringAsFixed(2)}',
             trendLabel: '+ 0%',
             trendIsPositive: true,
             isNeutral: true,
@@ -158,7 +163,7 @@ class _DashboardTabState extends State<_DashboardTab> {
           const SizedBox(height: 16),
           _MetricCard(
             title: 'BOOKINGS',
-            value: '${provider.totalBookings}',
+            value: '${provider.getBookingsCount(_selectedFilter)}',
             trendLabel: '+ 0%',
             trendIsPositive: true,
             isNeutral: true,
@@ -167,7 +172,7 @@ class _DashboardTabState extends State<_DashboardTab> {
           const SizedBox(height: 16),
           _MetricCard(
             title: 'AVG TICKET',
-            value: '\$${provider.totalBookings > 0 ? (provider.dailyRevenue / provider.totalBookings).toStringAsFixed(2) : '0.00'}',
+            value: '\$${provider.getBookingsCount(_selectedFilter) > 0 ? (provider.getRevenue(_selectedFilter) / provider.getBookingsCount(_selectedFilter)).toStringAsFixed(2) : '0.00'}',
             trendLabel: '- 0%',
             trendIsPositive: false,
             isNeutral: true,
@@ -270,7 +275,24 @@ class _DashboardTabState extends State<_DashboardTab> {
             crossAxisSpacing: 16,
             childAspectRatio: 1.5,
             children: [
-              _QuickActionCard(icon: Icons.edit_calendar, label: 'New Booking', onTap: () {}),
+              _QuickActionCard(
+                icon: Icons.edit_calendar, 
+                label: 'New Booking', 
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => const WalkInDialog(),
+                  ).then((success) {
+                    if (!context.mounted) return;
+                    if (success == true) {
+                      context.read<AdminProvider>().fetchAllData(); // refresh data
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Berhasil menambahkan pesanan!'), backgroundColor: Colors.green),
+                      );
+                    }
+                  });
+                }
+              ),
               _QuickActionCard(
                 icon: Icons.badge_outlined, 
                 label: 'Manage Staff', 
@@ -559,6 +581,73 @@ class _BookingManagementTab extends StatelessWidget {
       case 'cancelled': return Colors.red;
       default: return AppColors.onSurfaceVariantFull;
     }
+  }
+}
+
+// ==========================================
+// 5. PROFILE TAB
+// ==========================================
+class _ProfileTab extends StatelessWidget {
+  const _ProfileTab();
+
+  @override
+  Widget build(BuildContext context) {
+    final authProvider = context.watch<AuthProvider>();
+    
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const SizedBox(height: 48),
+          const CircleAvatar(
+            radius: 50,
+            backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=11'),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            authProvider.fullName ?? 'Admin',
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            authProvider.user?.email ?? 'admin@barber69.com',
+            style: const TextStyle(color: AppColors.onSurfaceVariantFull),
+          ),
+          const SizedBox(height: 48),
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () async {
+                await authProvider.signOut();
+                if (context.mounted) {
+                  context.go('/login');
+                }
+              },
+              icon: const Icon(Icons.logout, color: Colors.white),
+              label: const Text(
+                'Log Out',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

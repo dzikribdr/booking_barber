@@ -26,6 +26,9 @@ class _ServiceDialogState extends State<ServiceDialog> {
   late TextEditingController _descriptionController;
   late TextEditingController _durationController;
   late TextEditingController _priceController;
+  
+  final List<String> _categories = ['Haircut', 'Shave', 'Beard Trim', 'Treatment', 'Signature'];
+  late String _selectedCategory;
 
   @override
   void initState() {
@@ -34,6 +37,10 @@ class _ServiceDialogState extends State<ServiceDialog> {
     _descriptionController = TextEditingController(text: widget.service?.description ?? '');
     _durationController = TextEditingController(text: widget.service?.durationMinutes.toString() ?? '30');
     _priceController = TextEditingController(text: widget.service?.price.toString() ?? '0.0');
+    _selectedCategory = widget.service?.category ?? 'Haircut';
+    if (!_categories.contains(_selectedCategory)) {
+      _categories.add(_selectedCategory);
+    }
   }
 
   @override
@@ -52,6 +59,7 @@ class _ServiceDialogState extends State<ServiceDialog> {
       
       final newService = ServiceModel(
         id: widget.service?.id ?? '', // empty id for new
+        category: _selectedCategory,
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
         durationMinutes: duration,
@@ -79,6 +87,14 @@ class _ServiceDialogState extends State<ServiceDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              DropdownButtonFormField<String>(
+                value: _selectedCategory,
+                dropdownColor: AppColors.charcoalGray,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(labelText: 'Category', labelStyle: TextStyle(color: AppColors.onSurfaceVariantFull)),
+                items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                onChanged: (val) => setState(() => _selectedCategory = val!),
+              ),
               TextFormField(
                 controller: _nameController,
                 style: const TextStyle(color: Colors.white),

@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../providers/booking_provider.dart';
+import '../widgets/rate_barber_dialog.dart';
 
 class BookingHistoryPage extends StatefulWidget {
   final String? statusFilter;
@@ -75,10 +76,15 @@ class _BookingHistoryPageState extends State<BookingHistoryPage> {
                             final service = booking['services'] as Map<String, dynamic>?;
                             
                             final serviceName = service?['name'] ?? 'Unknown Service';
+                            final barberData = booking['barbers'] as Map<String, dynamic>?;
+                            final barberName = barberData?['name'] ?? 'Unknown Barber';
+                            final barberId = barberData?['id'];
                             final price = service?['price'] ?? 0;
                             final status = booking['status'] ?? 'unknown';
                             final isTransactionView = widget.statusFilter == 'transaction';
                             final paymentMethod = booking['payment_method'] ?? 'Cash/QRIS';
+                            final bookingId = booking['id'];
+                            final isRated = booking['is_rated'] == true;
                             
                             // Format date
                             final bookingTimeStr = booking['booking_time'] as String?;
@@ -97,14 +103,17 @@ class _BookingHistoryPageState extends State<BookingHistoryPage> {
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 16.0),
                               child: _HistoryCard(
+                                bookingId: bookingId,
+                                barberId: barberId,
                                 service: serviceName,
-                                barber: 'Any Barber', // Placeholder as barber_id is not yet implemented
+                                barber: barberName,
                                 date: dateStr,
                                 time: timeStr,
                                 price: '\$${price.toStringAsFixed(2)}',
                                 status: status.toString().toUpperCase(),
                                 paymentMethod: paymentMethod,
                                 isTransactionView: isTransactionView,
+                                isRated: isRated,
                               ),
                             );
                           },
@@ -118,6 +127,8 @@ class _BookingHistoryPageState extends State<BookingHistoryPage> {
 }
 
 class _HistoryCard extends StatelessWidget {
+  final String? bookingId;
+  final String? barberId;
   final String service;
   final String barber;
   final String date;
@@ -126,8 +137,11 @@ class _HistoryCard extends StatelessWidget {
   final String status;
   final String paymentMethod;
   final bool isTransactionView;
+  final bool isRated;
 
   const _HistoryCard({
+    this.bookingId,
+    this.barberId,
     required this.service,
     required this.barber,
     required this.date,
@@ -136,6 +150,7 @@ class _HistoryCard extends StatelessWidget {
     required this.status,
     this.paymentMethod = 'Cash/QRIS',
     this.isTransactionView = false,
+    this.isRated = false,
   });
 
   @override
@@ -166,7 +181,7 @@ class _HistoryCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
+                    color: statusColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: statusColor,
@@ -213,6 +228,42 @@ class _HistoryCard extends StatelessWidget {
                 children: [
                   Text('Metode Pembayaran', style: Theme.of(context).textTheme.bodyMedium),
                   Text(paymentMethod, style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold, color: AppColors.onSurfaceVariantFull)),
+                ],
+              ),
+            ],
+            if (status == 'COMPLETED' && !isRated && barberId != null && bookingId != null) ...[
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => RateBarberDialog(
+                        bookingId: bookingId!,
+                        barberId: barberId!,
+                        barberName: barber,
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.star_outline),
+                  label: const Text('Rate Barber'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    side: const BorderSide(color: AppColors.primary),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+            ],
+            if (status == 'COMPLETED' && isRated) ...[
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Icon(Icons.star, color: AppColors.primary, size: 16),
+                  SizedBox(width: 8),
+                  Text('Rating Submitted', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
                 ],
               ),
             ],

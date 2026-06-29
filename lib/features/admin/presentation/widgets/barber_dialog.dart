@@ -122,7 +122,7 @@ class _BarberDialogState extends State<BarberDialog> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _status,
+                initialValue: _status,
                 dropdownColor: AppColors.charcoalGray,
                 style: const TextStyle(color: Colors.white),
                 decoration: const InputDecoration(labelText: 'Status', labelStyle: TextStyle(color: AppColors.onSurfaceVariantFull)),

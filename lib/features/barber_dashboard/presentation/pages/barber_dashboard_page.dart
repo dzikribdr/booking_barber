@@ -31,6 +31,7 @@ class BarberDashboardPage extends StatelessWidget {
                 context: context,
                 builder: (context) => const WalkInDialog(),
               ).then((success) {
+                if (!context.mounted) return;
                 if (success == true) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Berhasil menambahkan pelanggan Walk-In!'), backgroundColor: Colors.green),
@@ -78,7 +79,7 @@ class BarberDashboardPage extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.all(32.0),
                       decoration: BoxDecoration(
-                        color: AppColors.background.withOpacity(0.8),
+                        color: AppColors.background.withValues(alpha: 0.8),
                         border: const Border(top: BorderSide(color: Colors.white10)),
                       ),
                       child: SafeArea(
@@ -200,7 +201,7 @@ class _InstructionsCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.matteBlack,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -299,7 +300,7 @@ class _SlideToCompleteButtonState extends State<_SlideToCompleteButton> {
                   borderRadius: BorderRadius.circular(38),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withOpacity(0.5),
+                      color: AppColors.primary.withValues(alpha: 0.5),
                       blurRadius: 15,
                       spreadRadius: 2,
                     )

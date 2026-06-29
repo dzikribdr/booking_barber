@@ -60,10 +60,10 @@ class _QueueTrackingPageState extends State<QueueTrackingPage> {
           decoration: BoxDecoration(
             color: AppColors.charcoalGray,
             shape: BoxShape.circle,
-            border: Border.all(color: AppColors.primary.withOpacity(0.2), width: 2),
+            border: Border.all(color: AppColors.primary.withValues(alpha: 0.2), width: 2),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withOpacity(0.05),
+                color: AppColors.primary.withValues(alpha: 0.05),
                 blurRadius: 30,
                 spreadRadius: 10,
               ),
@@ -132,7 +132,10 @@ class _QueueTrackingPageState extends State<QueueTrackingPage> {
           queueNumber: queueData['queue_number'] as int? ?? 0,
         ),
         const SizedBox(height: 48),
-        const _GlassBookingDetailsCard(),
+        _GlassBookingDetailsCard(
+          barberName: queueData['barber_name'] as String? ?? 'Unknown Barber',
+          serviceName: queueData['service_name'] as String? ?? 'Unknown Service',
+        ),
         const SizedBox(height: 40),
         _CancelButton(onCancel: () async {
           final confirm = await showDialog<bool>(
@@ -154,11 +157,13 @@ class _QueueTrackingPageState extends State<QueueTrackingPage> {
             ),
           );
           
+          if (!mounted) return;
+
           if (confirm == true) {
             final provider = context.read<QueueProvider?>();
             if (provider != null) {
               await provider.cancelQueue();
-              if (context.mounted) {
+              if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Antrean berhasil dibatalkan'), backgroundColor: Colors.green),
                 );
@@ -278,7 +283,7 @@ class _CircularProgressTimerState extends State<_CircularProgressTimer> {
             color: AppColors.matteBlack,
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withOpacity(0.15),
+                color: AppColors.primary.withValues(alpha: 0.15),
                 blurRadius: 50,
                 spreadRadius: 10,
               ),
@@ -379,8 +384,13 @@ class _CurrentServingStatus extends StatelessWidget {
 }
 
 class _GlassBookingDetailsCard extends StatelessWidget {
+  final String barberName;
+  final String serviceName;
 
-  const _GlassBookingDetailsCard();
+  const _GlassBookingDetailsCard({
+    required this.barberName,
+    required this.serviceName,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -391,16 +401,16 @@ class _GlassBookingDetailsCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: AppColors.charcoalGray.withOpacity(0.6),
+            color: AppColors.charcoalGray.withValues(alpha: 0.6),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: Colors.white10, width: 1),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildDetailItem(context, 'Barber', 'James "Razor"', Icons.person),
+              _buildDetailItem(context, 'Barber', barberName, Icons.person),
               Container(width: 1, height: 40, color: AppColors.outlineVariant),
-              _buildDetailItem(context, 'Service', 'Signature Shave', Icons.content_cut),
+              _buildDetailItem(context, 'Service', serviceName, Icons.content_cut),
             ],
           ),
         ),

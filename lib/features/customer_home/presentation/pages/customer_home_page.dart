@@ -4,9 +4,23 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../booking/presentation/providers/booking_provider.dart';
 
-class CustomerHomePage extends StatelessWidget {
+class CustomerHomePage extends StatefulWidget {
   const CustomerHomePage({super.key});
+
+  @override
+  State<CustomerHomePage> createState() => _CustomerHomePageState();
+}
+
+class _CustomerHomePageState extends State<CustomerHomePage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<BookingProvider?>()?.fetchTopBarbers();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -111,9 +125,9 @@ class _LoyaltyCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: AppColors.charcoalGray.withOpacity(0.7),
+            color: AppColors.charcoalGray.withValues(alpha: 0.7),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.primary.withOpacity(0.3), width: 1),
+            border: Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 1),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -176,7 +190,7 @@ class _PromoCard extends StatelessWidget {
         color: AppColors.matteBlack,
         border: Border.all(color: AppColors.charcoalGray),
         gradient: LinearGradient(
-          colors: [AppColors.matteBlack, AppColors.charcoalGray.withOpacity(0.5)],
+          colors: [AppColors.matteBlack, AppColors.charcoalGray.withValues(alpha: 0.5)],
           begin: Alignment.bottomLeft,
           end: Alignment.topRight,
         ),
@@ -186,7 +200,7 @@ class _PromoCard extends StatelessWidget {
           Positioned(
             right: -20,
             bottom: -20,
-            child: Icon(Icons.content_cut, size: 120, color: AppColors.primary.withOpacity(0.1)),
+            child: Icon(Icons.content_cut, size: 120, color: AppColors.primary.withValues(alpha: 0.1)),
           ),
           Padding(
             padding: const EdgeInsets.all(20.0),
@@ -263,12 +277,26 @@ class _TopBarbersList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bookingProvider = context.watch<BookingProvider?>();
+    final topBarbers = bookingProvider?.topBarbers ?? [];
+
+    if (topBarbers.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Text('No top barbers available yet.', style: TextStyle(color: AppColors.onSurfaceVariantFull)),
+        ),
+      );
+    }
+
     return Column(
-      children: const [
-        _BarberListItem(name: 'James "The Razor"', rating: 4.9, reviews: 124),
-        _BarberListItem(name: 'Michael Fade', rating: 4.8, reviews: 89),
-        _BarberListItem(name: 'David Blade', rating: 5.0, reviews: 201),
-      ],
+      children: topBarbers.map((barberData) {
+        final name = barberData['name'] ?? 'Unknown Barber';
+        final rating = (barberData['rating'] ?? 0.0).toDouble();
+        final reviews = barberData['reviews_count'] ?? 0;
+        
+        return _BarberListItem(name: name, rating: rating, reviews: reviews);
+      }).toList(),
     );
   }
 }
@@ -297,7 +325,7 @@ class _BarberListItem extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppColors.matteBlack,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.primary.withOpacity(0.5)),
+              border: Border.all(color: AppColors.primary.withValues(alpha: 0.5)),
             ),
             child: const Icon(Icons.person, color: AppColors.onSurfaceVariantFull, size: 30),
           ),

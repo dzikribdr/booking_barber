@@ -45,7 +45,7 @@ class BookingProvider extends ChangeNotifier {
       // Insert booking matching the SQL schema
       final insertData = {
         'service_id': serviceId,
-        'barber_id': barberId,
+        if (barberId.isNotEmpty) 'barber_id': barberId,
         'booking_time': combinedDateTimeStr,
         'end_time': endDateTime.toIso8601String(),
         'status': 'confirmed', // Auto-confirm for demo purposes
@@ -117,6 +117,67 @@ class BookingProvider extends ChangeNotifier {
     }
   }
 
+  List<Map<String, dynamic>> _topBarbers = [];
+  List<Map<String, dynamic>> get topBarbers => _topBarbers;
+
+  Future<void> fetchTopBarbers() async {
+    try {
+      final data = await _supabase.client
+          .from('barbers')
+          .select()
+          .eq('status', 'active')
+          .order('rating', ascending: false)
+          .limit(5); // Get top 5 barbers
+      _topBarbers = List<Map<String, dynamic>>.from(data);
+      notifyListeners();
+    } catch (e) {
+      debugPrint("Error fetching top barbers: $e");
+    }
+  }
+
+  Future<bool> submitBarberRating(String bookingId, String barberId, double rating, String? review) async {
+    try {
+      final user = _supabase.currentUser;
+      if (user == null) return false;
+
+      // 1. Insert into barber_reviews
+      await _supabase.client.from('barber_reviews').insert({
+        'booking_id': bookingId,
+        'barber_id': barberId,
+        'customer_id': user.id,
+        'rating': rating,
+        'review_text': review,
+      });
+
+      // 2. Update booking is_rated
+      await _supabase.client.from('bookings').update({'is_rated': true}).eq('id', bookingId);
+
+      // 3. Update barber rating (get current rating and reviews_count, then calculate new)
+      final barberResponse = await _supabase.client.from('barbers').select('rating, reviews_count').eq('id', barberId).single();
+      
+      final currentRating = (barberResponse['rating'] ?? 0.0).toDouble();
+      final currentReviewsCount = barberResponse['reviews_count'] ?? 0;
+      
+      final newReviewsCount = currentReviewsCount + 1;
+      final newRating = ((currentRating * currentReviewsCount) + rating) / newReviewsCount;
+      
+      await _supabase.client.from('barbers').update({
+        'rating': newRating,
+        'reviews_count': newReviewsCount,
+      }).eq('id', barberId);
+
+      // Refresh history to update is_rated status locally
+      await fetchBookingHistory();
+      // Also refresh top barbers
+      await fetchTopBarbers();
+      
+      return true;
+    } catch (e) {
+      debugPrint("Error submitting rating: $e");
+      return false;
+    }
+  }
+
   Future<void> fetchBookingHistory({String? statusFilter}) async {
     _isLoading = true;
     notifyListeners();
@@ -127,7 +188,7 @@ class BookingProvider extends ChangeNotifier {
 
       var filterBuilder = _supabase.client
           .from('bookings')
-          .select('*, services(name, price, duration_minutes)')
+          .select('*, services(name, price, duration_minutes), barbers(id, name)')
           .eq('customer_id', user.id);
 
       if (statusFilter != null && statusFilter != 'all') {

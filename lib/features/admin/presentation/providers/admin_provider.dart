@@ -27,15 +27,54 @@ class AdminProvider with ChangeNotifier {
   int get totalBookings => _bookings.length;
   int get activeStaff => _barbers.where((b) => b.status == 'active').length;
   int get totalCustomers => _bookings.map((b) => b.userId).toSet().length;
-  double get dailyRevenue {
-    final today = DateTime.now();
-    return _bookings
-        .where((b) => 
-            b.status == 'completed' && 
-            b.bookingDate.year == today.year && 
-            b.bookingDate.month == today.month && 
-            b.bookingDate.day == today.day)
-        .fold(0.0, (sum, b) => sum + (b.totalPrice ?? 0.0));
+  double getRevenue(String filter) {
+    final now = DateTime.now();
+    DateTime startDate;
+
+    if (filter == '7D') {
+      startDate = now.subtract(const Duration(days: 7));
+    } else if (filter == '30D') {
+      startDate = now.subtract(const Duration(days: 30));
+    } else {
+      // Today
+      startDate = DateTime(now.year, now.month, now.day);
+    }
+
+    return _bookings.where((b) {
+      if (b.status == 'cancelled') return false;
+      
+      if (filter == 'Today') {
+        return b.bookingDate.year == now.year &&
+               b.bookingDate.month == now.month &&
+               b.bookingDate.day == now.day;
+      }
+      return b.bookingDate.isAfter(startDate) || b.bookingDate.isAtSameMomentAs(startDate);
+    }).fold(0.0, (sum, b) => sum + (b.totalPrice ?? 0.0));
+  }
+
+  int getBookingsCount(String filter) {
+    final now = DateTime.now();
+    DateTime startDate;
+
+    if (filter == '7D') {
+      startDate = now.subtract(const Duration(days: 7));
+    } else if (filter == '30D') {
+      startDate = now.subtract(const Duration(days: 30));
+    } else {
+      // Today
+      startDate = DateTime(now.year, now.month, now.day);
+    }
+
+    return _bookings.where((b) {
+      if (b.status == 'cancelled') return false;
+
+      if (filter == 'Today') {
+        return b.bookingDate.year == now.year &&
+               b.bookingDate.month == now.month &&
+               b.bookingDate.day == now.day;
+      }
+      return b.bookingDate.isAfter(startDate) || b.bookingDate.isAtSameMomentAs(startDate);
+    }).length;
   }
 
   AdminProvider() {
@@ -164,16 +203,65 @@ class AdminProvider with ChangeNotifier {
     }
   }
 
-  // --- BOOKING MANAGEMENT ---
-
   Future<void> fetchBookings() async {
     try {
-      // Using join query to get related barber and service data if possible,
-      // or just fetching the raw bookings depending on setup.
-      final response = await _supabase.from('bookings').select('*, barbers(*), services(*), profiles(*)').order('booking_time', ascending: false);
-      _bookings = (response as List).map((e) => BookingModel.fromJson(e)).toList();
+      // Fetch raw bookings first
+      final response = await _supabase.from('bookings').select().order('booking_time', ascending: false);
+      
+      final List<dynamic> bookingsData = response as List;
+      
+      // Fetch customer profiles if possible to avoid join errors
+      final customerIds = bookingsData
+          .map((e) => e['customer_id'] as String?)
+          .where((id) => id != null)
+          .toSet()
+          .toList();
+          
+      Map<String, String> profileNames = {};
+      if (customerIds.isNotEmpty) {
+        try {
+          final profilesResponse = await _supabase
+              .from('profiles')
+              .select('id, full_name')
+              .filter('id', 'in', customerIds); // fallback for inFilter
+          for (var p in profilesResponse) {
+            profileNames[p['id'].toString()] = p['full_name'].toString();
+          }
+        } catch (e) {
+          debugPrint('Failed to fetch profiles for bookings: $e');
+        }
+      }
+
+      _bookings = bookingsData.map((e) {
+        final Map<String, dynamic> json = Map.from(e);
+        
+        // Attach profile
+        if (json['customer_id'] != null && profileNames.containsKey(json['customer_id'].toString())) {
+          json['profiles'] = {'full_name': profileNames[json['customer_id'].toString()]};
+        }
+        
+        // Attach barber from memory
+        if (json['barber_id'] != null) {
+          try {
+            final barber = _barbers.firstWhere((b) => b.id == json['barber_id']);
+            json['barbers'] = barber.toJson();
+          } catch (_) {}
+        }
+        
+        // Attach service from memory
+        if (json['service_id'] != null) {
+          try {
+            final service = _services.firstWhere((s) => s.id == json['service_id']);
+            json['services'] = service.toJson();
+          } catch (_) {}
+        }
+
+        return BookingModel.fromJson(json);
+      }).toList();
+      
       notifyListeners();
     } catch (e) {
+      debugPrint('Failed to fetch bookings: $e');
       _setError('Failed to fetch bookings: $e');
     }
   }
