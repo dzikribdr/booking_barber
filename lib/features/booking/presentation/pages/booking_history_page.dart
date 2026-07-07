@@ -109,7 +109,7 @@ class _BookingHistoryPageState extends State<BookingHistoryPage> {
                                 barber: barberName,
                                 date: dateStr,
                                 time: timeStr,
-                                price: '\$${price.toStringAsFixed(2)}',
+                                price: 'Rp ${price.toStringAsFixed(0)}',
                                 status: status.toString().toUpperCase(),
                                 paymentMethod: paymentMethod,
                                 isTransactionView: isTransactionView,

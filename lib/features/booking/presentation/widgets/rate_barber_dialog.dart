@@ -41,23 +41,26 @@ class _RateBarberDialogState extends State<RateBarberDialog> {
     setState(() => _isSubmitting = true);
 
     final provider = context.read<BookingProvider?>();
-    final success = await provider?.submitBarberRating(
+    final errorMsg = await provider?.submitBarberRating(
       widget.bookingId,
       widget.barberId,
       _rating,
       _reviewController.text.trim(),
-    ) ?? false;
+    );
 
     if (mounted) {
       setState(() => _isSubmitting = false);
-      if (success) {
+      if (errorMsg == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Rating submitted successfully!')),
         );
         Navigator.of(context).pop(true);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to submit rating. Please try again.')),
+          SnackBar(
+            content: Text('Failed: $errorMsg'),
+            duration: const Duration(seconds: 5),
+          ),
         );
       }
     }

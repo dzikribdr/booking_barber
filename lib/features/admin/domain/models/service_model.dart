@@ -6,6 +6,7 @@ class ServiceModel {
   final int durationMinutes;
   final double price;
   final DateTime? createdAt;
+  final String? imageUrl;
 
   ServiceModel({
     required this.id,
@@ -15,6 +16,7 @@ class ServiceModel {
     required this.durationMinutes,
     required this.price,
     this.createdAt,
+    this.imageUrl,
   });
 
   factory ServiceModel.fromJson(Map<String, dynamic> json) {
@@ -26,6 +28,7 @@ class ServiceModel {
       durationMinutes: json['duration_minutes'] ?? 30,
       price: (json['price'] ?? 0).toDouble(),
       createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
+      imageUrl: json['image_url'],
     );
   }
 
@@ -37,6 +40,7 @@ class ServiceModel {
       'description': description,
       'duration_minutes': durationMinutes,
       'price': price,
+      if (imageUrl != null) 'image_url': imageUrl,
     };
   }
 
@@ -48,6 +52,7 @@ class ServiceModel {
     int? durationMinutes,
     double? price,
     DateTime? createdAt,
+    String? imageUrl,
   }) {
     return ServiceModel(
       id: id ?? this.id,
@@ -57,6 +62,7 @@ class ServiceModel {
       durationMinutes: durationMinutes ?? this.durationMinutes,
       price: price ?? this.price,
       createdAt: createdAt ?? this.createdAt,
+      imageUrl: imageUrl ?? this.imageUrl,
     );
   }
 }

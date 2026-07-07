@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../providers/booking_provider.dart';
+import '../../../queue/presentation/providers/queue_provider.dart';
 
 class BookingSelectionPage extends StatefulWidget {
   const BookingSelectionPage({super.key});
@@ -71,7 +72,30 @@ class _BookingSelectionPageState extends State<BookingSelectionPage> {
 
   Future<void> _handleBooking() async {
     final bookingProvider = context.read<BookingProvider?>();
+    final queueProvider = context.read<QueueProvider?>();
+    
     if (bookingProvider == null) return;
+
+    if (queueProvider != null && queueProvider.hasActiveQueue) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: AppColors.charcoalGray,
+          title: const Text('Peringatan', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          content: const Text(
+            'Anda sudah melakukan booking. Selesaikan atau batalkan antrean Anda saat ini terlebih dahulu.',
+            style: TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
 
     final selectedService = bookingProvider.selectedService;
     if (selectedService == null) {
@@ -126,8 +150,11 @@ class _BookingSelectionPageState extends State<BookingSelectionPage> {
   @override
   Widget build(BuildContext context) {
     final bookingProvider = context.watch<BookingProvider?>();
+    final queueProvider = context.watch<QueueProvider?>();
+    
     final isLoading = bookingProvider?.isLoading ?? false;
     final selectedService = bookingProvider?.selectedService;
+    final globalQueue = queueProvider?.globalQueue ?? [];
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -215,12 +242,19 @@ class _BookingSelectionPageState extends State<BookingSelectionPage> {
                               icon: const Icon(Icons.arrow_drop_down, color: AppColors.primary),
                               isDense: true,
                               items: bookingProvider.activeBarbers.map((barber) {
+                                final barberId = barber['id'].toString();
+                                final barberName = barber['name'] ?? 'Unknown';
+                                final isBusy = globalQueue.any((b) => 
+                                    b['barber_id'].toString() == barberId && 
+                                    (b['status'] == 'in-progress' || b['status'] == 'confirmed'));
+                                final displayName = isBusy ? '$barberName (Sedang Cukur)' : barberName;
+                                
                                 return DropdownMenuItem<String>(
-                                  value: barber['id'] as String,
+                                  value: barberId,
                                   child: Text(
-                                    barber['name'] ?? 'Unknown',
+                                    displayName,
                                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                          color: Colors.white,
+                                          color: isBusy ? Colors.orangeAccent : Colors.white,
                                           fontWeight: FontWeight.bold,
                                         ),
                                   ),

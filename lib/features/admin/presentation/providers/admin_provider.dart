@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/models/barber_model.dart';
@@ -167,25 +168,55 @@ class AdminProvider with ChangeNotifier {
     }
   }
 
-  Future<void> addService(ServiceModel service) async {
+  Future<String?> addService(ServiceModel service, {Uint8List? imageBytes, String? imageExt}) async {
     try {
       _setLoading(true);
-      await _supabase.from('services').insert(service.toJson());
+      String? imageUrl = service.imageUrl;
+
+      if (imageBytes != null && imageExt != null) {
+        final fileName = '${DateTime.now().millisecondsSinceEpoch}.$imageExt';
+        await _supabase.storage.from('services').uploadBinary(
+          fileName,
+          imageBytes,
+          fileOptions: FileOptions(contentType: 'image/$imageExt', upsert: true),
+        );
+        imageUrl = _supabase.storage.from('services').getPublicUrl(fileName);
+      }
+
+      final serviceToSave = service.copyWith(imageUrl: imageUrl);
+      await _supabase.from('services').insert(serviceToSave.toJson());
       await fetchServices();
+      return null;
     } catch (e) {
       _setError('Failed to add service: $e');
+      return e.toString();
     } finally {
       _setLoading(false);
     }
   }
 
-  Future<void> updateService(ServiceModel service) async {
+  Future<String?> updateService(ServiceModel service, {Uint8List? imageBytes, String? imageExt}) async {
     try {
       _setLoading(true);
-      await _supabase.from('services').update(service.toJson()).eq('id', service.id);
+      String? imageUrl = service.imageUrl;
+
+      if (imageBytes != null && imageExt != null) {
+        final fileName = '${DateTime.now().millisecondsSinceEpoch}.$imageExt';
+        await _supabase.storage.from('services').uploadBinary(
+          fileName,
+          imageBytes,
+          fileOptions: FileOptions(contentType: 'image/$imageExt', upsert: true),
+        );
+        imageUrl = _supabase.storage.from('services').getPublicUrl(fileName);
+      }
+
+      final serviceToSave = service.copyWith(imageUrl: imageUrl);
+      await _supabase.from('services').update(serviceToSave.toJson()).eq('id', service.id);
       await fetchServices();
+      return null;
     } catch (e) {
       _setError('Failed to update service: $e');
+      return e.toString();
     } finally {
       _setLoading(false);
     }

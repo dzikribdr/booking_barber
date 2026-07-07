@@ -71,7 +71,7 @@ class PaymentPage extends StatelessWidget {
                           ),
                         ),
                         child: Text(
-                          'PAY \$65.00 NOW',
+                          'PAY Rp 65.000 NOW',
                           style: Theme.of(context).textTheme.labelLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                             letterSpacing: 1.5,
@@ -116,9 +116,9 @@ class _InvoiceSummaryCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 24),
-          _buildInvoiceLine(context, 'Signature Shave', '\$35.00'),
+          _buildInvoiceLine(context, 'Signature Shave', 'Rp 35.000'),
           const SizedBox(height: 12),
-          _buildInvoiceLine(context, 'Haircut (Skin Fade)', '\$30.00'),
+          _buildInvoiceLine(context, 'Haircut (Skin Fade)', 'Rp 30.000'),
           
           if (isSilentMode) ...[
             const SizedBox(height: 16),
@@ -145,7 +145,7 @@ class _InvoiceSummaryCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Total Amount', style: Theme.of(context).textTheme.headlineMedium),
-              Text('\$65.00', style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: AppColors.primary)),
+              Text('Rp 65.000', style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: AppColors.primary)),
             ],
           ),
         ],

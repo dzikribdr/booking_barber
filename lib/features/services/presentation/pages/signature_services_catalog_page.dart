@@ -154,14 +154,20 @@ class _SignatureServicesCatalogPageState extends State<SignatureServicesCatalogP
           // Image / Header area (Placeholder)
           Container(
             height: 120,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               color: AppColors.matteBlack,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-              image: DecorationImage(
-                image: NetworkImage('https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&q=80'),
-                fit: BoxFit.cover,
-                opacity: 0.5,
-              ),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              image: service.imageUrl != null 
+                  ? DecorationImage(
+                      image: NetworkImage(service.imageUrl!),
+                      fit: BoxFit.cover,
+                      opacity: 0.8,
+                    )
+                  : const DecorationImage(
+                      image: NetworkImage('https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&q=80'),
+                      fit: BoxFit.cover,
+                      opacity: 0.5,
+                    ),
             ),
             padding: const EdgeInsets.all(16),
             alignment: Alignment.topRight,
@@ -195,7 +201,7 @@ class _SignatureServicesCatalogPageState extends State<SignatureServicesCatalogP
                           ),
                     ),
                     Text(
-                      '\$${service.price.toStringAsFixed(0)}',
+                      'Rp ${service.price.toStringAsFixed(0)}',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                             color: AppColors.primary,
                             fontWeight: FontWeight.w900,

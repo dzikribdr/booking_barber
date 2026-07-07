@@ -8,6 +8,7 @@ import '../../features/services/presentation/pages/signature_services_catalog_pa
 import '../../features/booking/presentation/pages/booking_selection_page.dart';
 import '../../features/payment/presentation/pages/payment_page.dart';
 import '../../features/queue/presentation/pages/queue_tracking_page.dart';
+import '../../features/queue/presentation/pages/live_queue_list_page.dart';
 import '../../features/admin/presentation/pages/super_admin_dashboard_page.dart';
 import '../../features/services/presentation/pages/shave_services_page.dart';
 import '../../features/services/presentation/pages/hair_treatments_page.dart';
@@ -17,6 +18,7 @@ import '../../features/booking/presentation/pages/booking_history_page.dart';
 import '../../features/profile/presentation/pages/profile_settings_page.dart';
 
 import '../../features/profile/presentation/pages/style_vault_page.dart';
+import '../../features/booking/presentation/pages/barber_reviews_page.dart';
 
 class AppRouter {
   static final router = GoRouter(
@@ -50,6 +52,14 @@ class AppRouter {
               GoRoute(
                 path: '/booking',
                 builder: (context, state) => const BookingSelectionPage(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/live-queue',
+                builder: (context, state) => const LiveQueueListPage(),
               ),
             ],
           ),
@@ -115,6 +125,13 @@ class AppRouter {
       GoRoute(
         path: '/style-vault',
         builder: (context, state) => const StyleVaultPage(),
+      ),
+      GoRoute(
+        path: '/barber-reviews',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return BarberReviewsPage(barberData: extra);
+        },
       ),
     ],
   );

@@ -65,14 +65,19 @@ class ScaffoldWithNavBar extends StatelessWidget {
               isSelected: navigationShell.currentIndex == 1,
             ),
             _buildNavItem(
-              icon: Icons.hourglass_empty,
-              label: 'Queue',
+              icon: Icons.list_alt,
+              label: 'Live Queue',
               isSelected: navigationShell.currentIndex == 2,
+            ),
+            _buildNavItem(
+              icon: Icons.hourglass_empty,
+              label: 'My Queue',
+              isSelected: navigationShell.currentIndex == 3,
             ),
             _buildNavItem(
               icon: Icons.person_outline,
               label: 'Profile',
-              isSelected: navigationShell.currentIndex == 3,
+              isSelected: navigationShell.currentIndex == 4,
             ),
           ],
         ),

@@ -13,7 +13,7 @@ class WalkInDialog extends StatefulWidget {
 
 class _WalkInDialogState extends State<WalkInDialog> {
   final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _priceController = TextEditingController(text: '30'); // Default price
+  final TextEditingController _priceController = TextEditingController(text: '30000'); // Default price
   bool _isLoading = false;
   String? _selectedBarberId;
 
@@ -117,7 +117,7 @@ class _WalkInDialogState extends State<WalkInDialog> {
               keyboardType: TextInputType.number,
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
-                labelText: 'Estimasi Harga (\$)',
+                labelText: 'Estimasi Harga (Rp)',
                 labelStyle: const TextStyle(color: AppColors.onSurfaceVariantFull),
                 filled: true,
                 fillColor: AppColors.matteBlack,

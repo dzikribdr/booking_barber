@@ -36,12 +36,13 @@ class ServiceManagementPage extends StatelessWidget {
             color: AppColors.charcoalGray,
             margin: const EdgeInsets.only(bottom: 16),
             child: ListTile(
-              leading: const CircleAvatar(
+              leading: CircleAvatar(
                 backgroundColor: AppColors.primaryContainer,
-                child: Icon(Icons.cut, color: AppColors.matteBlack),
+                backgroundImage: service.imageUrl != null ? NetworkImage(service.imageUrl!) : null,
+                child: service.imageUrl == null ? const Icon(Icons.cut, color: AppColors.matteBlack) : null,
               ),
               title: Text(service.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-              subtitle: Text('${service.durationMinutes} mins | \$${service.price}', style: const TextStyle(color: AppColors.onSurfaceVariantFull)),
+              subtitle: Text('${service.durationMinutes} mins | Rp ${service.price.toStringAsFixed(0)}', style: const TextStyle(color: AppColors.onSurfaceVariantFull)),
               trailing: IconButton(
                 icon: const Icon(Icons.edit, color: AppColors.primary),
                 onPressed: () {

@@ -120,6 +120,12 @@ class BookingProvider extends ChangeNotifier {
   List<Map<String, dynamic>> _topBarbers = [];
   List<Map<String, dynamic>> get topBarbers => _topBarbers;
 
+  List<Map<String, dynamic>> _barberReviews = [];
+  List<Map<String, dynamic>> get barberReviews => _barberReviews;
+  
+  bool _isLoadingReviews = false;
+  bool get isLoadingReviews => _isLoadingReviews;
+
   Future<void> fetchTopBarbers() async {
     try {
       final data = await _supabase.client
@@ -135,10 +141,29 @@ class BookingProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> submitBarberRating(String bookingId, String barberId, double rating, String? review) async {
+  Future<void> fetchBarberReviews(String barberId) async {
+    _isLoadingReviews = true;
+    notifyListeners();
+    try {
+      final data = await _supabase.client
+          .from('barber_reviews')
+          .select('*, profiles(full_name)')
+          .eq('barber_id', barberId)
+          .order('created_at', ascending: false);
+      _barberReviews = List<Map<String, dynamic>>.from(data);
+    } catch (e) {
+      debugPrint("Error fetching barber reviews: $e");
+      _barberReviews = [];
+    } finally {
+      _isLoadingReviews = false;
+      notifyListeners();
+    }
+  }
+
+  Future<String?> submitBarberRating(String bookingId, String barberId, double rating, String? review) async {
     try {
       final user = _supabase.currentUser;
-      if (user == null) return false;
+      if (user == null) return "User not logged in";
 
       // 1. Insert into barber_reviews
       await _supabase.client.from('barber_reviews').insert({
@@ -171,10 +196,10 @@ class BookingProvider extends ChangeNotifier {
       // Also refresh top barbers
       await fetchTopBarbers();
       
-      return true;
+      return null; // success
     } catch (e) {
       debugPrint("Error submitting rating: $e");
-      return false;
+      return e.toString();
     }
   }
 

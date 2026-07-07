@@ -291,11 +291,21 @@ class _TopBarbersList extends StatelessWidget {
 
     return Column(
       children: topBarbers.map((barberData) {
+        final id = barberData['id'];
         final name = barberData['name'] ?? 'Unknown Barber';
         final rating = (barberData['rating'] ?? 0.0).toDouble();
         final reviews = barberData['reviews_count'] ?? 0;
         
-        return _BarberListItem(name: name, rating: rating, reviews: reviews);
+        return _BarberListItem(
+          name: name, 
+          rating: rating, 
+          reviews: reviews,
+          onTap: () {
+            if (id != null) {
+              context.push('/barber-reviews', extra: barberData);
+            }
+          },
+        );
       }).toList(),
     );
   }
@@ -305,12 +315,21 @@ class _BarberListItem extends StatelessWidget {
   final String name;
   final double rating;
   final int reviews;
+  final VoidCallback? onTap;
 
-  const _BarberListItem({required this.name, required this.rating, required this.reviews});
+  const _BarberListItem({
+    required this.name, 
+    required this.rating, 
+    required this.reviews,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -349,11 +368,11 @@ class _BarberListItem extends StatelessWidget {
             ),
           ),
           IconButton(
-            onPressed: () {},
+            onPressed: onTap,
             icon: const Icon(Icons.arrow_forward_ios, size: 16, color: AppColors.primary),
           ),
         ],
       ),
-    );
+    ));
   }
 }

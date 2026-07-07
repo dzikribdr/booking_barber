@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../providers/queue_provider.dart';
+import '../../../booking/presentation/widgets/rate_barber_dialog.dart';
 
 class QueueTrackingPage extends StatefulWidget {
   const QueueTrackingPage({super.key});
@@ -126,6 +127,9 @@ class _QueueTrackingPageState extends State<QueueTrackingPage> {
         _CircularProgressTimer(
           createdAt: queueData['created_at'] as String?,
           estimatedWaitMinutes: queueData['estimated_wait_minutes'] as int? ?? 15,
+          bookingId: queueData['booking_id'] as String?,
+          barberId: queueData['barber_id'] as String?,
+          barberName: queueData['barber_name'] as String?,
         ),
         const SizedBox(height: 48),
         _CurrentServingStatus(
@@ -179,7 +183,16 @@ class _QueueTrackingPageState extends State<QueueTrackingPage> {
 class _CircularProgressTimer extends StatefulWidget {
   final String? createdAt;
   final int estimatedWaitMinutes;
-  const _CircularProgressTimer({required this.createdAt, required this.estimatedWaitMinutes});
+  final String? bookingId;
+  final String? barberId;
+  final String? barberName;
+  const _CircularProgressTimer({
+    required this.createdAt, 
+    required this.estimatedWaitMinutes,
+    this.bookingId,
+    this.barberId,
+    this.barberName,
+  });
 
   @override
   State<_CircularProgressTimer> createState() => _CircularProgressTimerState();
@@ -248,6 +261,16 @@ class _CircularProgressTimerState extends State<_CircularProgressTimer> {
             onPressed: () {
               Navigator.pop(dialogContext);
               provider?.completeQueue();
+              if (widget.bookingId != null && widget.barberId != null && widget.barberName != null) {
+                showDialog(
+                  context: context,
+                  builder: (_) => RateBarberDialog(
+                    bookingId: widget.bookingId!,
+                    barberId: widget.barberId!,
+                    barberName: widget.barberName!,
+                  ),
+                );
+              }
             },
             child: const Text('OK', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
           ),

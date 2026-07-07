@@ -5,6 +5,7 @@ class ServiceItem {
   final String description;
   final int durationMinutes;
   final double price;
+  final String? imageUrl;
 
   ServiceItem({
     required this.id,
@@ -13,6 +14,7 @@ class ServiceItem {
     required this.description,
     required this.durationMinutes,
     required this.price,
+    this.imageUrl,
   });
 
   factory ServiceItem.fromJson(Map<String, dynamic> json) {
@@ -23,6 +25,7 @@ class ServiceItem {
       description: json['description'] as String? ?? '',
       durationMinutes: json['duration_minutes'] as int,
       price: (json['price'] as num).toDouble(),
+      imageUrl: json['image_url'] as String?,
     );
   }
 }

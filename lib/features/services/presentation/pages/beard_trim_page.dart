@@ -71,13 +71,19 @@ class _BeardServiceCard extends StatelessWidget {
             height: 160,
             decoration: BoxDecoration(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              gradient: LinearGradient(
+              gradient: service.imageUrl == null ? LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [AppColors.charcoalGray.withValues(alpha: 0.3), AppColors.matteBlack],
-              ),
+              ) : null,
+              image: service.imageUrl != null 
+                  ? DecorationImage(
+                      image: NetworkImage(service.imageUrl!),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
             ),
-            child: const Center(child: Icon(Icons.face, size: 50, color: Colors.white12)),
+            child: service.imageUrl == null ? const Center(child: Icon(Icons.face, size: 50, color: Colors.white12)) : null,
           ),
           Padding(
             padding: const EdgeInsets.all(20.0),
@@ -101,7 +107,7 @@ class _BeardServiceCard extends StatelessWidget {
                       children: [
                         Text('${service.durationMinutes} Min', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.onSurfaceVariantFull)),
                         const SizedBox(height: 4),
-                        Text('\$${service.price.toStringAsFixed(2)}', style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: AppColors.primary, fontSize: 20)),
+                        Text('Rp ${service.price.toStringAsFixed(0)}', style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: AppColors.primary, fontSize: 20)),
                       ],
                     ),
                     OutlinedButton(

@@ -72,13 +72,19 @@ class _TreatmentServiceCard extends StatelessWidget {
             height: 180,
             decoration: BoxDecoration(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              gradient: LinearGradient(
+              gradient: service.imageUrl == null ? const LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [AppColors.charcoalGray, AppColors.matteBlack],
-              ),
+              ) : null,
+              image: service.imageUrl != null 
+                  ? DecorationImage(
+                      image: NetworkImage(service.imageUrl!),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
             ),
-            child: const Center(child: Icon(Icons.spa_outlined, size: 60, color: Colors.white12)),
+            child: service.imageUrl == null ? const Center(child: Icon(Icons.spa_outlined, size: 60, color: Colors.white12)) : null,
           ),
           Padding(
             padding: const EdgeInsets.all(24.0),
@@ -102,7 +108,7 @@ class _TreatmentServiceCard extends StatelessWidget {
                       children: [
                         Text('${service.durationMinutes} Min', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.onSurfaceVariantFull)),
                         const SizedBox(height: 4),
-                        Text('\$${service.price.toStringAsFixed(2)}', style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: AppColors.primary)),
+                        Text('Rp ${service.price.toStringAsFixed(0)}', style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: AppColors.primary)),
                       ],
                     ),
                     ElevatedButton(

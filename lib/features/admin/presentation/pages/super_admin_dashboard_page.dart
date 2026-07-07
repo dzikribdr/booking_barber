@@ -7,6 +7,7 @@ import 'service_management_page.dart';
 import '../../../booking/presentation/widgets/walk_in_dialog.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/utils/export_utils.dart';
 
 class SuperAdminDashboardPage extends StatefulWidget {
   const SuperAdminDashboardPage({super.key});
@@ -118,8 +119,11 @@ class _DashboardTabState extends State<_DashboardTab> {
           const Text('Today\'s metrics and recent activity across all locations.', style: TextStyle(color: AppColors.onSurfaceVariantFull)),
           const SizedBox(height: 16),
           
-          // Time Filter Toggle
-          Container(
+          // Time Filter Toggle & Export
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
             decoration: BoxDecoration(
               color: AppColors.charcoalGray,
               borderRadius: BorderRadius.circular(8),
@@ -149,12 +153,23 @@ class _DashboardTabState extends State<_DashboardTab> {
               }).toList(),
             ),
           ),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.black,
+                ),
+                onPressed: () => _showExportDialog(context, provider),
+                icon: const Icon(Icons.download, size: 18),
+                label: const Text('Export', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
           const SizedBox(height: 24),
 
           // Metrics Stack
           _MetricCard(
             title: 'TOTAL REVENUE',
-            value: '\$${provider.getRevenue(_selectedFilter).toStringAsFixed(2)}',
+            value: 'Rp ${provider.getRevenue(_selectedFilter).toStringAsFixed(0)}',
             trendLabel: '+ 0%',
             trendIsPositive: true,
             isNeutral: true,
@@ -172,7 +187,7 @@ class _DashboardTabState extends State<_DashboardTab> {
           const SizedBox(height: 16),
           _MetricCard(
             title: 'AVG TICKET',
-            value: '\$${provider.getBookingsCount(_selectedFilter) > 0 ? (provider.getRevenue(_selectedFilter) / provider.getBookingsCount(_selectedFilter)).toStringAsFixed(2) : '0.00'}',
+            value: 'Rp ${provider.getBookingsCount(_selectedFilter) > 0 ? (provider.getRevenue(_selectedFilter) / provider.getBookingsCount(_selectedFilter)).toStringAsFixed(0) : '0'}',
             trendLabel: '- 0%',
             trendIsPositive: false,
             isNeutral: true,
@@ -314,6 +329,74 @@ class _DashboardTabState extends State<_DashboardTab> {
         ],
       ),
     );
+  }
+
+  void _showExportDialog(BuildContext context, AdminProvider provider) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.charcoalGray,
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.picture_as_pdf, color: Colors.red),
+                title: const Text('Export as PDF', style: TextStyle(color: Colors.white)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _exportData(context, provider, isPdf: true);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.table_chart, color: Colors.green),
+                title: const Text('Export as Excel', style: TextStyle(color: Colors.white)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _exportData(context, provider, isPdf: false);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _exportData(BuildContext context, AdminProvider provider, {required bool isPdf}) async {
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Generating report...')));
+      
+      final now = DateTime.now();
+      DateTime startDate;
+      if (_selectedFilter == '7D') {
+        startDate = now.subtract(const Duration(days: 7));
+      } else if (_selectedFilter == '30D') {
+        startDate = now.subtract(const Duration(days: 30));
+      } else {
+        startDate = DateTime(now.year, now.month, now.day);
+      }
+      
+      final filteredBookings = provider.bookings.where((b) {
+        if (b.status == 'cancelled') return false;
+        if (_selectedFilter == 'Today') {
+          return b.bookingDate.year == now.year &&
+                 b.bookingDate.month == now.month &&
+                 b.bookingDate.day == now.day;
+        }
+        return b.bookingDate.isAfter(startDate) || b.bookingDate.isAtSameMomentAs(startDate);
+      }).toList();
+
+      if (isPdf) {
+        await ExportUtils.exportToPdf(filteredBookings, _selectedFilter);
+      } else {
+        await ExportUtils.exportToExcel(filteredBookings, _selectedFilter);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Export failed: $e'), backgroundColor: Colors.red));
+      }
+    }
   }
 }
 

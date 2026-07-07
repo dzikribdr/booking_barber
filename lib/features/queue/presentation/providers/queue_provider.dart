@@ -5,13 +5,25 @@ import '../../../../core/services/supabase_service.dart';
 class QueueProvider extends ChangeNotifier {
   final SupabaseService _supabase;
   Map<String, dynamic>? _currentQueue;
+  List<Map<String, dynamic>> _globalQueue = [];
   RealtimeChannel? _subscription;
 
   QueueProvider(this._supabase) {
+    _supabase.client.auth.onAuthStateChange.listen((data) {
+      if (data.event == AuthChangeEvent.signedOut) {
+        _currentQueue = null;
+        _subscription?.unsubscribe();
+        _subscription = null;
+        notifyListeners();
+      } else if (data.event == AuthChangeEvent.signedIn) {
+        fetchQueue();
+      }
+    });
     fetchQueue();
   }
 
   Map<String, dynamic>? get currentQueue => _currentQueue;
+  List<Map<String, dynamic>> get globalQueue => _globalQueue;
   bool get hasActiveQueue => _currentQueue != null;
 
   Future<void> fetchQueue() async {
@@ -40,7 +52,11 @@ class QueueProvider extends ChangeNotifier {
 
   Future<void> _fetchAndCalculate() async {
     final user = _supabase.currentUser;
-    if (user == null) return;
+    if (user == null) {
+      _currentQueue = null;
+      notifyListeners();
+      return;
+    }
 
     // Get today's active bookings
     final todayStr = DateTime.now().toUtc().toIso8601String().substring(0, 10);
@@ -53,6 +69,8 @@ class QueueProvider extends ChangeNotifier {
         .order('booking_time', ascending: true);
 
     final List<dynamic> allBookings = response;
+    
+    _globalQueue = List<Map<String, dynamic>>.from(allBookings);
     
     // Find my booking
     final myBookingIndex = allBookings.indexWhere((b) => b['customer_id'] == user.id);
@@ -93,6 +111,7 @@ class QueueProvider extends ChangeNotifier {
         'created_at': myBooking['created_at'],
         'barber_name': barberName,
         'service_name': serviceName,
+        'barber_id': myBooking['barber_id'],
       };
       notifyListeners();
     } else {

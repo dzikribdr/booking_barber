@@ -71,13 +71,19 @@ class _FullWidthServiceCard extends StatelessWidget {
             height: 200,
             decoration: BoxDecoration(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              gradient: LinearGradient(
+              gradient: service.imageUrl == null ? const LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [AppColors.matteBlack, AppColors.charcoalGray],
-              ),
+              ) : null,
+              image: service.imageUrl != null 
+                  ? DecorationImage(
+                      image: NetworkImage(service.imageUrl!),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
             ),
-            child: const Center(child: Icon(Icons.image, size: 60, color: Colors.white12)),
+            child: service.imageUrl == null ? const Center(child: Icon(Icons.image, size: 60, color: Colors.white12)) : null,
           ),
           // Content
           Padding(
@@ -103,7 +109,7 @@ class _FullWidthServiceCard extends StatelessWidget {
                       children: [
                         Text('${service.durationMinutes} Min', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.onSurfaceVariantFull)),
                         const SizedBox(height: 4),
-                        Text('\$${service.price.toStringAsFixed(2)}', style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: AppColors.primary)),
+                        Text('Rp ${service.price.toStringAsFixed(0)}', style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: AppColors.primary)),
                       ],
                     ),
                     ElevatedButton(

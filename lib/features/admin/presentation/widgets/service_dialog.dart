@@ -1,4 +1,6 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../domain/models/service_model.dart';
@@ -29,6 +31,22 @@ class _ServiceDialogState extends State<ServiceDialog> {
   
   final List<String> _categories = ['Haircut', 'Shave', 'Beard Trim', 'Treatment', 'Signature'];
   late String _selectedCategory;
+  
+  Uint8List? _selectedImageBytes;
+  String? _selectedImageExt;
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      final bytes = await pickedFile.readAsBytes();
+      final ext = pickedFile.name.contains('.') ? pickedFile.name.split('.').last : 'jpg';
+      setState(() {
+        _selectedImageBytes = bytes;
+        _selectedImageExt = ext;
+      });
+    }
+  }
 
   @override
   void initState() {
@@ -52,7 +70,7 @@ class _ServiceDialogState extends State<ServiceDialog> {
     super.dispose();
   }
 
-  void _save() {
+  Future<void> _save() async {
     if (_formKey.currentState!.validate()) {
       final duration = int.tryParse(_durationController.text.trim()) ?? 30;
       final price = double.tryParse(_priceController.text.trim()) ?? 0.0;
@@ -64,15 +82,52 @@ class _ServiceDialogState extends State<ServiceDialog> {
         description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
         durationMinutes: duration,
         price: price,
+        imageUrl: widget.service?.imageUrl, // preserve existing imageurl if any
       );
 
       final provider = context.read<AdminProvider>();
+      String? error;
+      
       if (widget.service == null) {
-        provider.addService(newService);
+        error = await provider.addService(newService, imageBytes: _selectedImageBytes, imageExt: _selectedImageExt);
       } else {
-        provider.updateService(newService);
+        error = await provider.updateService(newService, imageBytes: _selectedImageBytes, imageExt: _selectedImageExt);
       }
-      Navigator.of(context).pop();
+      
+      if (mounted) {
+        if (error == null) {
+          Navigator.of(context).pop(); // Close ServiceDialog
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Sukses', style: TextStyle(color: Colors.white)),
+              content: const Text('Service saved successfully!', style: TextStyle(color: Colors.white70)),
+              backgroundColor: AppColors.charcoalGray,
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('OK', style: TextStyle(color: AppColors.primary)),
+                ),
+              ],
+            ),
+          );
+        } else {
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Gagal', style: TextStyle(color: Colors.red)),
+              content: Text(error!, style: const TextStyle(color: Colors.white70)),
+              backgroundColor: AppColors.charcoalGray,
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('OK', style: TextStyle(color: AppColors.primary)),
+                ),
+              ],
+            ),
+          );
+        }
+      }
     }
   }
 
@@ -87,6 +142,37 @@ class _ServiceDialogState extends State<ServiceDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              GestureDetector(
+                onTap: _pickImage,
+                child: Container(
+                  height: 150,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: AppColors.matteBlack,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.outlineVariant),
+                  ),
+                  child: _selectedImageBytes != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.memory(_selectedImageBytes!, fit: BoxFit.cover),
+                        )
+                      : (widget.service?.imageUrl != null
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.network(widget.service!.imageUrl!, fit: BoxFit.cover),
+                            )
+                          : const Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.add_photo_alternate, size: 40, color: AppColors.onSurfaceVariantFull),
+                                SizedBox(height: 8),
+                                Text('Upload Photo', style: TextStyle(color: AppColors.onSurfaceVariantFull)),
+                              ],
+                            )),
+                ),
+              ),
+              const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 value: _selectedCategory,
                 dropdownColor: AppColors.charcoalGray,
@@ -127,7 +213,7 @@ class _ServiceDialogState extends State<ServiceDialog> {
                       controller: _priceController,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       style: const TextStyle(color: Colors.white),
-                      decoration: const InputDecoration(labelText: 'Price', labelStyle: TextStyle(color: AppColors.onSurfaceVariantFull)),
+                      decoration: const InputDecoration(labelText: 'Price (Rp)', labelStyle: TextStyle(color: AppColors.onSurfaceVariantFull)),
                       validator: (val) {
                         if (val == null || val.isEmpty) return 'Required';
                         if (double.tryParse(val) == null) return 'Invalid number';
