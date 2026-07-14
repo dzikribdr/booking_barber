@@ -1,5 +1,5 @@
 ---
-name: Barber 69
+name: Barber 96
 colors:
   surface: '#121414'
   surface-dim: '#121414'

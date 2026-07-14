@@ -7,6 +7,7 @@ class QueueProvider extends ChangeNotifier {
   Map<String, dynamic>? _currentQueue;
   List<Map<String, dynamic>> _globalQueue = [];
   RealtimeChannel? _subscription;
+  bool _lastEventWasCancel = false;
 
   QueueProvider(this._supabase) {
     _supabase.client.auth.onAuthStateChange.listen((data) {
@@ -25,6 +26,7 @@ class QueueProvider extends ChangeNotifier {
   Map<String, dynamic>? get currentQueue => _currentQueue;
   List<Map<String, dynamic>> get globalQueue => _globalQueue;
   bool get hasActiveQueue => _currentQueue != null;
+  bool get lastEventWasCancel => _lastEventWasCancel;
 
   Future<void> fetchQueue() async {
     try {
@@ -39,6 +41,11 @@ class QueueProvider extends ChangeNotifier {
             schema: 'public',
             table: 'bookings',
             callback: (payload) {
+              if (payload.newRecord['status'] == 'cancelled') {
+                _lastEventWasCancel = true;
+              } else {
+                _lastEventWasCancel = false;
+              }
               _fetchAndCalculate();
             },
           )
@@ -62,7 +69,7 @@ class QueueProvider extends ChangeNotifier {
     final todayStr = DateTime.now().toUtc().toIso8601String().substring(0, 10);
     final response = await _supabase.client
         .from('bookings')
-        .select('*, barbers(name), services(name)')
+        .select('*, barbers(name), services(name, duration_minutes)')
         .gte('booking_time', '${todayStr}T00:00:00Z')
         .lte('booking_time', '${todayStr}T23:59:59Z')
         .inFilter('status', ['confirmed', 'in-progress'])
@@ -73,33 +80,37 @@ class QueueProvider extends ChangeNotifier {
     _globalQueue = List<Map<String, dynamic>>.from(allBookings);
     
     // Find my booking
-    final myBookingIndex = allBookings.indexWhere((b) => b['customer_id'] == user.id);
+    final myBookingIndexRaw = allBookings.indexWhere((b) => b['customer_id'] == user.id);
     
-    if (myBookingIndex != -1) {
-      final myBooking = allBookings[myBookingIndex];
-      int waitMinutes = 0;
-      int servingIndex = 0;
+    if (myBookingIndexRaw != -1) {
+      final myBooking = allBookings[myBookingIndexRaw];
+      final myBarberId = myBooking['barber_id'];
       
-      final now = DateTime.now();
+      // Filter bookings for the same barber to calculate queue correctly
+      final barberBookings = allBookings.where((b) => b['barber_id'] == myBarberId).toList();
+      final myIndexInBarberQueue = barberBookings.indexWhere((b) => b['id'] == myBooking['id']);
       
-      if (myBookingIndex == 0) {
-        // I am next
-        final bookingTime = DateTime.parse(myBooking['booking_time']).toLocal();
-        waitMinutes = bookingTime.difference(now).inMinutes;
-        servingIndex = 1; // You are the first
-      } else {
-        // Find the person right before me
-        final prevBooking = allBookings[myBookingIndex - 1];
-        if (prevBooking['end_time'] != null) {
-          final prevEndTime = DateTime.parse(prevBooking['end_time']).toLocal();
-          waitMinutes = prevEndTime.difference(now).inMinutes;
-        } else {
-          waitMinutes = 15 * myBookingIndex; // fallback
-        }
-        servingIndex = myBookingIndex + 1;
+      int totalQueueDuration = 0;
+      
+      // Sum the duration of all bookings ahead of me + my own
+      for (int i = 0; i <= myIndexInBarberQueue; i++) {
+        final b = barberBookings[i];
+        final duration = b['services'] != null ? (b['services']['duration_minutes'] ?? 30) : 30;
+        totalQueueDuration += (duration as num).toInt();
       }
       
-      if (waitMinutes < 0) waitMinutes = 0; // Don't show negative wait time
+      // Calculate elapsed time since this booking was created
+      final createdAt = DateTime.parse(myBooking['created_at']).toLocal();
+      final now = DateTime.now();
+      final elapsedMinutes = now.difference(createdAt).inMinutes;
+      int waitMinutes = totalQueueDuration - elapsedMinutes;
+      if (waitMinutes < 0) waitMinutes = 0;
+      
+      // Dynamic queue number (shifts down when someone cancels or completes)
+      int servingIndex = myBookingIndexRaw + 1;
+      
+      // Since it's a dynamic queue, the person currently being served is always at the front (index 0, so queue number 1).
+      int currentlyServing = allBookings.isNotEmpty ? 1 : 0;
       
       final barberName = myBooking['barbers'] != null ? myBooking['barbers']['name'] : 'Unknown Barber';
       final serviceName = myBooking['services'] != null ? myBooking['services']['name'] : 'Unknown Service';
@@ -107,11 +118,12 @@ class QueueProvider extends ChangeNotifier {
       _currentQueue = {
         'booking_id': myBooking['id'],
         'queue_number': servingIndex,
+        'currently_serving': currentlyServing,
         'estimated_wait_minutes': waitMinutes,
         'created_at': myBooking['created_at'],
         'barber_name': barberName,
         'service_name': serviceName,
-        'barber_id': myBooking['barber_id'],
+        'barber_id': myBarberId,
       };
       notifyListeners();
     } else {
@@ -132,11 +144,8 @@ class QueueProvider extends ChangeNotifier {
       // 2. Update booking status to cancelled
       await _supabase.client.from('bookings').update({'status': 'cancelled'}).eq('id', bookingId);
       
-      // 3. Clear local state
-      _currentQueue = null;
-      _subscription?.unsubscribe();
-      _subscription = null;
-      notifyListeners();
+      // 3. Clear local state and refetch global queue immediately
+      await _fetchAndCalculate();
       
     } catch (e) {
       debugPrint("Failed to cancel queue: $e");
@@ -155,11 +164,8 @@ class QueueProvider extends ChangeNotifier {
       // 2. Update booking status to completed
       await _supabase.client.from('bookings').update({'status': 'completed'}).eq('id', bookingId);
       
-      // 3. Clear local state
-      _currentQueue = null;
-      _subscription?.unsubscribe();
-      _subscription = null;
-      notifyListeners();
+      // 3. Clear local state and refetch global queue immediately
+      await _fetchAndCalculate();
       
     } catch (e) {
       debugPrint("Failed to complete queue: $e");

@@ -60,8 +60,9 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           const SizedBox(width: 16),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(vertical: 16.0),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(vertical: 16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -107,6 +108,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
             ),
             const SizedBox(height: 40),
           ],
+        ),
         ),
       ),
     );
@@ -182,8 +184,9 @@ class _PromoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cardWidth = MediaQuery.of(context).size.width * 0.75;
     return Container(
-      width: 280,
+      width: cardWidth,
       margin: const EdgeInsets.only(right: 16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
@@ -225,19 +228,24 @@ class _ServiceGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GridView.count(
-      crossAxisCount: 2,
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      childAspectRatio: 1.1,
-      children: const [
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        int columns = constraints.maxWidth < 320 ? 1 : 2;
+        return GridView.count(
+          crossAxisCount: columns,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          childAspectRatio: columns == 1 ? 2.5 : 1.1,
+          children: const [
         _ServiceCard(title: 'Haircut', icon: Icons.content_cut, route: '/haircuts'),
         _ServiceCard(title: 'Beard Trim', icon: Icons.face, route: '/beard-trim'),
         _ServiceCard(title: 'Hot Shave', icon: Icons.water_drop, route: '/shave'),
         _ServiceCard(title: 'Treatments', icon: Icons.spa, route: '/treatments'),
       ],
+        );
+      },
     );
   }
 }

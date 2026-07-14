@@ -46,26 +46,42 @@ class _LoginRegisterPageState extends State<LoginRegisterPage> {
       return;
     }
 
-    bool success;
     if (_isLogin) {
-      success = await authProvider.signIn(email, password);
-    } else {
-      success = await authProvider.signUp(email, password, fullName);
-    }
-
-    if (success && mounted) {
-      if (authProvider.role == 'admin' || authProvider.role == 'super_admin') {
-        context.go('/admin-dashboard');
-      } else {
-        context.go('/home');
+      final success = await authProvider.signIn(email, password);
+      
+      if (success && mounted) {
+        if (authProvider.role == 'admin' || authProvider.role == 'super_admin') {
+          context.go('/admin-dashboard');
+        } else {
+          context.go('/home');
+        }
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(authProvider.errorMessage ?? 'Authentication failed'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(authProvider.errorMessage ?? 'Authentication failed'),
-          backgroundColor: Colors.red,
-        ),
-      );
+    } else {
+      final success = await authProvider.signUp(email, password, fullName);
+      
+      if (success && mounted) {
+        _toggleMode(); // Switch back to login mode
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Berhasil! Silahkan cek email untuk verifikasi.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(authProvider.errorMessage ?? 'Authentication failed'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -75,101 +91,103 @@ class _LoginRegisterPageState extends State<LoginRegisterPage> {
     final isLoading = authProvider?.isLoading ?? false;
 
     return Scaffold(
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          return Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 450),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Icon(
-                      Icons.content_cut,
-                      size: 64,
-                      color: AppColors.primary,
-                      shadows: [
-                        Shadow(
-                          blurRadius: 15.0,
-                          color: AppColors.primary.withValues(alpha: 0.3),
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24.0),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 450),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Icon(
+                        Icons.content_cut,
+                        size: 64,
+                        color: AppColors.primary,
+                        shadows: [
+                          Shadow(
+                            blurRadius: 15.0,
+                            color: AppColors.primary.withValues(alpha: 0.3),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 32),
+                      Text(
+                        _isLogin ? 'Welcome Back' : 'Create Account',
+                        style: Theme.of(context).textTheme.headlineLarge,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _isLogin 
+                          ? 'Sign in to access your exclusive lounge.'
+                          : 'Join the premier gentlemen\'s experience.',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 40),
+                      
+                      if (!_isLogin) ...[
+                        TextField(
+                          controller: _fullNameController,
+                          decoration: const InputDecoration(
+                            hintText: 'Full Name',
+                            prefixIcon: Icon(Icons.person_outline),
+                          ),
                         ),
+                        const SizedBox(height: 16),
                       ],
-                    ),
-                    const SizedBox(height: 32),
-                    Text(
-                      _isLogin ? 'Welcome Back' : 'Create Account',
-                      style: Theme.of(context).textTheme.headlineLarge,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _isLogin 
-                        ? 'Sign in to access your exclusive lounge.'
-                        : 'Join the premier gentlemen\'s experience.',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 40),
-                    
-                    if (!_isLogin) ...[
+                      
                       TextField(
-                        controller: _fullNameController,
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
                         decoration: const InputDecoration(
-                          hintText: 'Full Name',
-                          prefixIcon: Icon(Icons.person_outline),
+                          hintText: 'Email Address',
+                          prefixIcon: Icon(Icons.email_outlined),
                         ),
                       ),
                       const SizedBox(height: 16),
+                      TextField(
+                        controller: _passwordController,
+                        obscureText: true,
+                        decoration: const InputDecoration(
+                          hintText: 'Password',
+                          prefixIcon: Icon(Icons.lock_outline),
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+  
+                      SizedBox(
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: isLoading ? null : _submit,
+                          child: isLoading
+                              ? const CircularProgressIndicator(color: AppColors.onSurfaceVariantFull)
+                              : Text(_isLogin ? 'LOG IN' : 'REGISTER'),
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 24),
+                      
+                      TextButton(
+                        onPressed: isLoading ? null : _toggleMode,
+                        child: Text(
+                          _isLogin 
+                            ? 'Don\'t have an account? Register'
+                            : 'Already have an account? Log in',
+                          style: const TextStyle(color: AppColors.primary),
+                        ),
+                      ),
                     ],
-                    
-                    TextField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
-                        hintText: 'Email Address',
-                        prefixIcon: Icon(Icons.email_outlined),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: _passwordController,
-                      obscureText: true,
-                      decoration: const InputDecoration(
-                        hintText: 'Password',
-                        prefixIcon: Icon(Icons.lock_outline),
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-
-                    SizedBox(
-                      height: 56,
-                      child: ElevatedButton(
-                        onPressed: isLoading ? null : _submit,
-                        child: isLoading
-                            ? const CircularProgressIndicator(color: AppColors.onSurfaceVariantFull)
-                            : Text(_isLogin ? 'LOG IN' : 'REGISTER'),
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 24),
-                    
-                    TextButton(
-                      onPressed: isLoading ? null : _toggleMode,
-                      child: Text(
-                        _isLogin 
-                          ? 'Don\'t have an account? Register'
-                          : 'Already have an account? Log in',
-                        style: const TextStyle(color: AppColors.primary),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

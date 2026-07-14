@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/services/supabase_service.dart';
 import '../../../../features/services/domain/entities/service_item.dart';
 
@@ -7,10 +8,41 @@ class BookingProvider extends ChangeNotifier {
   bool _isLoading = false;
   ServiceItem? _selectedService;
   
-  BookingProvider(this._supabase);
+  RealtimeChannel? _bookingsSubscription;
+  String? _currentViewedDate;
+  String? _currentViewedBarberId;
+  
+  BookingProvider(this._supabase) {
+    _initRealtimeSubscription();
+  }
+  
+  void _initRealtimeSubscription() {
+    _bookingsSubscription = _supabase.client
+        .channel('public:bookings_selection')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'bookings',
+          callback: (payload) {
+            if (_currentViewedDate != null && _currentViewedBarberId != null) {
+              fetchBookedTimes(_currentViewedDate!, _currentViewedBarberId!, isRefresh: true);
+            }
+          },
+        )
+        .subscribe();
+  }
+
+  @override
+  void dispose() {
+    _bookingsSubscription?.unsubscribe();
+    super.dispose();
+  }
   
   bool get isLoading => _isLoading;
   ServiceItem? get selectedService => _selectedService;
+  
+  List<String> _bookedTimes = [];
+  List<String> get bookedTimes => _bookedTimes;
 
   void setService(ServiceItem service) {
     _selectedService = service;
@@ -42,12 +74,36 @@ class BookingProvider extends ChangeNotifier {
       final duration = _selectedService?.durationMinutes ?? 30;
       final endDateTime = startDateTime.add(Duration(minutes: duration));
 
+      // Check for overlapping bookings
+      if (barberId.isNotEmpty) {
+        final existingBookings = await _supabase.client
+            .from('bookings')
+            .select('id, booking_time, services(duration_minutes)')
+            .eq('barber_id', barberId)
+            .neq('status', 'cancelled')
+            .gte('booking_time', '${bookingDate}T00:00:00Z')
+            .lte('booking_time', '${bookingDate}T23:59:59Z');
+            
+        for (var b in existingBookings as List) {
+           final bStart = DateTime.parse(b['booking_time']);
+           int existingDuration = 30;
+           if (b['services'] != null && b['services']['duration_minutes'] != null) {
+             existingDuration = (b['services']['duration_minutes'] as num).toInt();
+           }
+           final bEnd = bStart.add(Duration(minutes: existingDuration));
+           
+           // Check overlap: start < bEnd AND end > bStart
+           if (startDateTime.isBefore(bEnd) && endDateTime.isAfter(bStart)) {
+              return "Waktu ini sudah dipesan oleh pelanggan lain. Silakan pilih waktu lain.";
+           }
+        }
+      }
+
       // Insert booking matching the SQL schema
       final insertData = {
         'service_id': serviceId,
         if (barberId.isNotEmpty) 'barber_id': barberId,
         'booking_time': combinedDateTimeStr,
-        'end_time': endDateTime.toIso8601String(),
         'status': 'confirmed', // Auto-confirm for demo purposes
         'total_price': totalAmount,
         'is_for_other': isForOther,
@@ -125,6 +181,9 @@ class BookingProvider extends ChangeNotifier {
   
   bool _isLoadingReviews = false;
   bool get isLoadingReviews => _isLoadingReviews;
+  
+  String? _lastReviewError;
+  String? get lastReviewError => _lastReviewError;
 
   Future<void> fetchTopBarbers() async {
     try {
@@ -143,16 +202,43 @@ class BookingProvider extends ChangeNotifier {
 
   Future<void> fetchBarberReviews(String barberId) async {
     _isLoadingReviews = true;
+    _lastReviewError = null;
     notifyListeners();
     try {
       final data = await _supabase.client
           .from('barber_reviews')
-          .select('*, profiles(full_name)')
+          .select()
           .eq('barber_id', barberId)
           .order('created_at', ascending: false);
-      _barberReviews = List<Map<String, dynamic>>.from(data);
+          
+      final reviews = List<Map<String, dynamic>>.from(data);
+      
+      // Fetch profiles separately because there might not be a direct FK from barber_reviews to profiles
+      if (reviews.isNotEmpty) {
+        final customerIds = reviews.map((r) => r['customer_id']).where((id) => id != null).toSet().toList();
+        if (customerIds.isNotEmpty) {
+          try {
+            final profilesData = await _supabase.client
+                .from('profiles')
+                .select('id, full_name')
+                .inFilter('id', customerIds);
+                
+            final profilesMap = {for (var p in profilesData) p['id']: p};
+            
+            for (var review in reviews) {
+              review['profiles'] = profilesMap[review['customer_id']];
+            }
+          } catch (profileError) {
+            debugPrint("Error fetching profiles for reviews (RLS issue?): $profileError");
+            // Lanjut saja, nama akan jadi Anonymous Customer jika gagal
+          }
+        }
+      }
+      
+      _barberReviews = reviews;
     } catch (e) {
-      debugPrint("Error fetching barber reviews: $e");
+      debugPrint("Error fetching barber reviews (Main table issue): $e");
+      _lastReviewError = e.toString();
       _barberReviews = [];
     } finally {
       _isLoadingReviews = false;
@@ -230,6 +316,59 @@ class BookingProvider extends ChangeNotifier {
       _bookingHistory = List<Map<String, dynamic>>.from(data);
     } catch (e) {
       debugPrint("Error fetching booking history: $e");
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> fetchBookedTimes(String date, String barberId, {bool isRefresh = false}) async {
+    _currentViewedDate = date;
+    _currentViewedBarberId = barberId;
+    
+    if (!isRefresh) {
+      _isLoading = true;
+      notifyListeners();
+    }
+    
+    try {
+      final startOfDay = '${date}T00:00:00Z';
+      final endOfDay = '${date}T23:59:59Z';
+      
+      final data = await _supabase.client
+          .from('bookings')
+          .select('booking_time, services(duration_minutes)')
+          .eq('barber_id', barberId)
+          .gte('booking_time', startOfDay)
+          .lte('booking_time', endOfDay)
+          .neq('status', 'cancelled'); // Assumes cancelled bookings free up the slot
+          
+      debugPrint('SUPABASE BOOKINGS DATA: $data');
+
+      Set<String> newBookedTimes = {};
+      
+      for (var e in data as List) {
+        final startTimeStr = e['booking_time'] as String;
+        int dur = 30;
+        if (e['services'] != null && e['services']['duration_minutes'] != null) {
+          dur = (e['services']['duration_minutes'] as num).toInt();
+        }
+        
+        DateTime start = DateTime.parse(startTimeStr);
+        DateTime end = start.add(Duration(minutes: dur));
+        
+        DateTime current = start;
+        while (current.isBefore(end)) {
+          final timeString = "${current.hour.toString().padLeft(2, '0')}:${current.minute.toString().padLeft(2, '0')}";
+          newBookedTimes.add(timeString);
+          current = current.add(const Duration(minutes: 30));
+        }
+      }
+      _bookedTimes = newBookedTimes.toList();
+      debugPrint('COMPUTED BOOKED TIMES: $_bookedTimes');
+    } catch (e) {
+      debugPrint("Error fetching booked times: $e");
+      _bookedTimes = [];
     } finally {
       _isLoading = false;
       notifyListeners();

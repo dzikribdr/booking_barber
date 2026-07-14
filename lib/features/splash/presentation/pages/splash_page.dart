@@ -76,7 +76,7 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
               ),
               const SizedBox(height: 24),
               Text(
-                'BARBER 69',
+                'BARBER 96',
                 style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                   color: AppColors.primary,
                   letterSpacing: 4.0,

@@ -86,7 +86,7 @@ class AuthProvider extends ChangeNotifier {
       if (res.user != null) {
         // Check if the user already exists (Supabase returns a fake user with empty identities for security)
         if (res.user!.identities != null && res.user!.identities!.isEmpty) {
-          throw const AuthException('Email already registered. Please log in.');
+          throw const AuthException('Email sudah terdaftar.');
         }
 
         // Create profile in DB
@@ -95,6 +95,9 @@ class AuthProvider extends ChangeNotifier {
           'full_name': fullName,
           'role': 'customer',
         });
+
+        // Ensure user is not auto-logged in, they must verify email and log in manually
+        await _supabase.signOut();
       }
       return true;
     } catch (e) {

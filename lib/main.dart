@@ -95,7 +95,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'Barber 69',
+      title: 'Barber 96',
       theme: AppTheme.darkTheme,
       routerConfig: AppRouter.router,
       debugShowCheckedModeBanner: false,

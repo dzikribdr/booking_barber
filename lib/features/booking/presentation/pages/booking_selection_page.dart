@@ -50,25 +50,28 @@ class _BookingSelectionPageState extends State<BookingSelectionPage> {
     }
   }
   
-  final List<Map<String, dynamic>> _morningSlots = [
-    {'time': '09:00', 'isBooked': true},
-    {'time': '09:30', 'isBooked': false},
-    {'time': '10:00', 'isBooked': false},
-    {'time': '10:30', 'isBooked': true},
-    {'time': '11:00', 'isBooked': false},
-    {'time': '11:30', 'isBooked': false},
+  final List<String> _morningSlots = [
+    '09:00', '09:30', '10:00', '10:30', '11:00', '11:30'
   ];
 
-  final List<Map<String, dynamic>> _afternoonSlots = [
-    {'time': '12:00', 'isBooked': false},
-    {'time': '12:30', 'isBooked': false},
-    {'time': '13:00', 'isBooked': true},
-    {'time': '13:30', 'isBooked': false},
-    {'time': '14:00', 'isBooked': false},
-    {'time': '14:30', 'isBooked': false},
-    {'time': '15:00', 'isBooked': false},
-    {'time': '15:30', 'isBooked': false},
+  final List<String> _afternoonSlots = [
+    '12:00', '12:30', '13:00', '13:30', '14:00', '14:30',
+    '15:00', '15:30', '16:00', '16:30', '17:00', '17:30'
   ];
+
+  final List<String> _eveningSlots = [
+    '18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00'
+  ];
+
+  void _fetchBookedTimesIfNeeded() {
+    if (_selectedBarberId != null) {
+      final dateStr = _dates[_selectedDateIndex]['fullDate']!;
+      context.read<BookingProvider?>()?.fetchBookedTimes(dateStr, _selectedBarberId!);
+      setState(() {
+        _selectedTime = '';
+      });
+    }
+  }
 
   Future<void> _handleBooking() async {
     final bookingProvider = context.read<BookingProvider?>();
@@ -155,6 +158,7 @@ class _BookingSelectionPageState extends State<BookingSelectionPage> {
     final isLoading = bookingProvider?.isLoading ?? false;
     final selectedService = bookingProvider?.selectedService;
     final globalQueue = queueProvider?.globalQueue ?? [];
+    final bookedTimes = bookingProvider?.bookedTimes ?? [];
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -172,7 +176,7 @@ class _BookingSelectionPageState extends State<BookingSelectionPage> {
           },
         ),
         title: Text(
-          'BARBER 69',
+          'BARBER 96',
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                 color: AppColors.primary,
                 fontWeight: FontWeight.w900,
@@ -264,6 +268,7 @@ class _BookingSelectionPageState extends State<BookingSelectionPage> {
                                 setState(() {
                                   _selectedBarberId = value;
                                 });
+                                _fetchBookedTimesIfNeeded();
                               },
                             ),
                           ),
@@ -284,9 +289,12 @@ class _BookingSelectionPageState extends State<BookingSelectionPage> {
                         return Padding(
                           padding: const EdgeInsets.only(right: 12.0),
                           child: InkWell(
-                            onTap: () => setState(() {
-                              _selectedDateIndex = index;
-                            }),
+                            onTap: () {
+                              setState(() {
+                                _selectedDateIndex = index;
+                              });
+                              _fetchBookedTimesIfNeeded();
+                            },
                             borderRadius: BorderRadius.circular(16),
                             child: Container(
                               width: 70,
@@ -332,7 +340,7 @@ class _BookingSelectionPageState extends State<BookingSelectionPage> {
                         ),
                   ),
                   const SizedBox(height: 16),
-                  _buildTimeGrid(_morningSlots),
+                  _buildTimeGrid(_morningSlots, bookedTimes),
                   
                   const SizedBox(height: 32),
 
@@ -345,7 +353,20 @@ class _BookingSelectionPageState extends State<BookingSelectionPage> {
                         ),
                   ),
                   const SizedBox(height: 16),
-                  _buildTimeGrid(_afternoonSlots),
+                  _buildTimeGrid(_afternoonSlots, bookedTimes),
+                  
+                  const SizedBox(height: 32),
+
+                  Text(
+                    'EVENING',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.5,
+                        ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildTimeGrid(_eveningSlots, bookedTimes),
                   
                   const SizedBox(height: 32),
                   
@@ -458,7 +479,7 @@ class _BookingSelectionPageState extends State<BookingSelectionPage> {
     );
   }
 
-  Widget _buildTimeGrid(List<Map<String, dynamic>> slots) {
+  Widget _buildTimeGrid(List<String> slots, List<String> bookedTimes) {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -470,9 +491,24 @@ class _BookingSelectionPageState extends State<BookingSelectionPage> {
       ),
       itemCount: slots.length,
       itemBuilder: (context, index) {
-        final slot = slots[index];
-        final time = slot['time'] as String;
-        final isBooked = slot['isBooked'] as bool;
+        final time = slots[index];
+        
+        // Cek apakah waktu sudah lewat untuk hari ini
+        bool isPastTime = false;
+        final dateStr = _dates[_selectedDateIndex]['fullDate']!;
+        final now = DateTime.now();
+        final todayStr = DateFormat('yyyy-MM-dd').format(now);
+        
+        if (dateStr == todayStr) {
+          final parts = time.split(':');
+          final hour = int.parse(parts[0]);
+          final minute = int.parse(parts[1]);
+          if (hour < now.hour || (hour == now.hour && minute < now.minute)) {
+            isPastTime = true;
+          }
+        }
+        
+        final isBooked = bookedTimes.contains(time) || isPastTime;
         final isSelected = _selectedTime == time;
 
         return InkWell(

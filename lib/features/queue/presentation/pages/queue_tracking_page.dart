@@ -14,6 +14,63 @@ class QueueTrackingPage extends StatefulWidget {
 }
 
 class _QueueTrackingPageState extends State<QueueTrackingPage> {
+  QueueProvider? _queueProvider;
+  int? _previousQueueNumber;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _queueProvider = context.read<QueueProvider?>();
+      if (_queueProvider != null) {
+        _previousQueueNumber = _queueProvider!.currentQueue?['queue_number'] as int?;
+        _queueProvider!.addListener(_onQueueChanged);
+      }
+    });
+  }
+
+  void _onQueueChanged() {
+    if (!mounted) return;
+    final currentQueueNumber = _queueProvider?.currentQueue?['queue_number'] as int?;
+    
+    if (_previousQueueNumber != null && currentQueueNumber != null) {
+      if (currentQueueNumber < _previousQueueNumber!) {
+        if (_queueProvider!.lastEventWasCancel) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Antrean anda mundur dari $_previousQueueNumber menjadi $currentQueueNumber karena ada pembatalan.',
+                style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+              ),
+              backgroundColor: AppColors.primary,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Antrean anda mundur dari $_previousQueueNumber menjadi $currentQueueNumber. Giliran Anda semakin dekat!',
+                style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+              ),
+              backgroundColor: AppColors.primary,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
+      }
+    }
+    _previousQueueNumber = currentQueueNumber;
+  }
+
+  @override
+  void dispose() {
+    _queueProvider?.removeListener(_onQueueChanged);
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final queueProvider = context.watch<QueueProvider?>();
@@ -33,20 +90,22 @@ class _QueueTrackingPageState extends State<QueueTrackingPage> {
         ),
         centerTitle: true,
       ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          return Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 500),
-                child: hasBooking && currentQueue != null 
-                    ? _buildActiveQueueUI(currentQueue) 
-                    : _buildEmptyStateUI(),
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 500),
+                  child: hasBooking && currentQueue != null 
+                      ? _buildActiveQueueUI(currentQueue) 
+                      : _buildEmptyStateUI(),
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
@@ -134,6 +193,7 @@ class _QueueTrackingPageState extends State<QueueTrackingPage> {
         const SizedBox(height: 48),
         _CurrentServingStatus(
           queueNumber: queueData['queue_number'] as int? ?? 0,
+          currentlyServing: queueData['currently_serving'] as int? ?? 0,
         ),
         const SizedBox(height: 48),
         _GlassBookingDetailsCard(
@@ -239,7 +299,7 @@ class _CircularProgressTimerState extends State<_CircularProgressTimer> {
 
     if (_minutesLeft < 0) _minutesLeft = 0;
 
-    if (_minutesLeft <= 0 && !_isFinished && widget.estimatedWaitMinutes > 0) {
+    if (_minutesLeft <= 0 && !_isFinished) {
       _isFinished = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _showFinishedDialog();
@@ -349,7 +409,8 @@ class _CircularProgressTimerState extends State<_CircularProgressTimer> {
 
 class _CurrentServingStatus extends StatelessWidget {
   final int queueNumber;
-  const _CurrentServingStatus({required this.queueNumber});
+  final int currentlyServing;
+  const _CurrentServingStatus({required this.queueNumber, required this.currentlyServing});
 
   @override
   Widget build(BuildContext context) {
@@ -376,8 +437,7 @@ class _CurrentServingStatus extends StatelessWidget {
                   ),
             ),
             Text(
-              // Assuming currently serving is slightly less than your number, or just show yours
-              '${queueNumber > 0 ? queueNumber - 1 : 0}', 
+              '$currentlyServing', 
               style: Theme.of(context).textTheme.displayLarge?.copyWith(
                     fontSize: 64,
                     fontWeight: FontWeight.w900,

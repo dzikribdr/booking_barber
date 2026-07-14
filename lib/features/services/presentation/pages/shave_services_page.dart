@@ -33,17 +33,19 @@ class ShaveServicesPage extends StatelessWidget {
         title: Text('Shave', style: Theme.of(context).textTheme.headlineMedium),
         centerTitle: true,
       ),
-      body: services.isEmpty
-          ? const Center(child: Text('No shave services available', style: TextStyle(color: Colors.white)))
-          : ListView.builder(
-              padding: const EdgeInsets.all(24.0),
-              itemCount: services.length,
-              itemBuilder: (context, index) {
-                return _ShaveServiceCard(
-                  service: services[index],
-                );
-              },
-            ),
+      body: SafeArea(
+        child: services.isEmpty
+            ? const Center(child: Text('No shave services available', style: TextStyle(color: Colors.white)))
+            : ListView.builder(
+                padding: const EdgeInsets.all(24.0),
+                itemCount: services.length,
+                itemBuilder: (context, index) {
+                  return _ShaveServiceCard(
+                    service: services[index],
+                  );
+                },
+              ),
+      ),
     );
   }
 }

@@ -5,12 +5,17 @@ import '../../../../core/theme/app_colors.dart';
 import 'package:provider/provider.dart';
 import '../../../queue/presentation/providers/queue_provider.dart';
 import '../../../../features/profile/presentation/providers/profile_provider.dart';
+import '../../../booking/presentation/providers/booking_provider.dart';
 
 class PaymentPage extends StatelessWidget {
   const PaymentPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final bookingProvider = context.watch<BookingProvider?>();
+    final selectedService = bookingProvider?.selectedService;
+    final totalAmount = selectedService?.price ?? 0.0;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -71,7 +76,7 @@ class PaymentPage extends StatelessWidget {
                           ),
                         ),
                         child: Text(
-                          'PAY Rp 65.000 NOW',
+                          'PAY Rp ${totalAmount.toStringAsFixed(0)} NOW',
                           style: Theme.of(context).textTheme.labelLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                             letterSpacing: 1.5,
@@ -97,6 +102,9 @@ class _InvoiceSummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final profileProvider = context.watch<ProfileProvider?>();
     final isSilentMode = profileProvider?.profile?.isSilentMode ?? false;
+    final bookingProvider = context.watch<BookingProvider?>();
+    final selectedService = bookingProvider?.selectedService;
+    final totalAmount = selectedService?.price ?? 0.0;
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -116,9 +124,10 @@ class _InvoiceSummaryCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 24),
-          _buildInvoiceLine(context, 'Signature Shave', 'Rp 35.000'),
-          const SizedBox(height: 12),
-          _buildInvoiceLine(context, 'Haircut (Skin Fade)', 'Rp 30.000'),
+          if (selectedService != null)
+            _buildInvoiceLine(context, selectedService.name, 'Rp ${selectedService.price.toStringAsFixed(0)}')
+          else
+            _buildInvoiceLine(context, 'No Service Selected', 'Rp 0'),
           
           if (isSilentMode) ...[
             const SizedBox(height: 16),
@@ -145,7 +154,7 @@ class _InvoiceSummaryCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Total Amount', style: Theme.of(context).textTheme.headlineMedium),
-              Text('Rp 65.000', style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: AppColors.primary)),
+              Text('Rp ${totalAmount.toStringAsFixed(0)}', style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: AppColors.primary)),
             ],
           ),
         ],

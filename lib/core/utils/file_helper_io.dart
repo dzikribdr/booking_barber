@@ -6,5 +6,5 @@ Future<void> saveAndShareFile(List<int> bytes, String fileName) async {
   final output = await getTemporaryDirectory();
   final file = File('${output.path}/$fileName');
   await file.writeAsBytes(bytes);
-  await Share.shareXFiles([XFile(file.path)], text: 'Financial Report - Barber 69');
+  await Share.shareXFiles([XFile(file.path)], text: 'Financial Report - Barber 96');
 }

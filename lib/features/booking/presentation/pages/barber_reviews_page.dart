@@ -100,9 +100,31 @@ class _BarberReviewsPageState extends State<BarberReviewsPage> {
               child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
             )
           else if (reviews.isEmpty)
-            const SliverFillRemaining(
+            SliverFillRemaining(
               child: Center(
-                child: Text('No reviews yet for this barber.', style: TextStyle(color: AppColors.onSurfaceVariantFull)),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text('No reviews yet for this barber.', style: TextStyle(color: AppColors.onSurfaceVariantFull)),
+                    const SizedBox(height: 16),
+                    if (bookingProvider?.lastReviewError != null) ...[
+                      const Icon(Icons.error_outline, color: Colors.redAccent, size: 40),
+                      const SizedBox(height: 8),
+                      const Text('Terjadi error saat mengambil data:', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Text('${bookingProvider?.lastReviewError}', textAlign: TextAlign.center, style: const TextStyle(color: Colors.redAccent, fontSize: 12)),
+                      ),
+                    ] else ...[
+                      Text('Debug ID: ${widget.barberData['id']}', style: const TextStyle(color: Colors.white24, fontSize: 10)),
+                      const SizedBox(height: 8),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 32),
+                        child: Text('Jika seharusnya ada review tapi kosong, berarti Anda belum menjalankan perintah SQL RLS di Supabase!', textAlign: TextAlign.center, style: TextStyle(color: Colors.redAccent, fontSize: 12)),
+                      )
+                    ]
+                  ],
+                ),
               ),
             )
           else

@@ -24,7 +24,7 @@ class ExportUtils {
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
                   pw.Text('Financial Report', style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
-                  pw.Text('BARBER 69', style: pw.TextStyle(fontSize: 18, color: PdfColors.grey700)),
+                  pw.Text('BARBER 96', style: pw.TextStyle(fontSize: 18, color: PdfColors.grey700)),
                 ]
               )
             ),

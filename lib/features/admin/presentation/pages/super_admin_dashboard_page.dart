@@ -47,7 +47,7 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
           onPressed: () {},
         ),
         title: const Text(
-          'BARBER 69',
+          'BARBER 96',
           style: TextStyle(
             color: AppColors.primary,
             fontWeight: FontWeight.w900,
@@ -123,36 +123,42 @@ class _DashboardTabState extends State<_DashboardTab> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-            decoration: BoxDecoration(
-              color: AppColors.charcoalGray,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.outlineVariant),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: ['Today', '7D', '30D'].map((filter) {
-                final isSelected = _selectedFilter == filter;
-                return GestureDetector(
-                  onTap: () => setState(() => _selectedFilter = filter),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: isSelected ? AppColors.surfaceBright : Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      filter,
-                      style: TextStyle(
-                        color: isSelected ? Colors.white : AppColors.onSurfaceVariantFull,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      ),
-                    ),
+              Flexible(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.charcoalGray,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.outlineVariant),
                   ),
-                );
-              }).toList(),
-            ),
-          ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: ['Today', '7D', '30D'].map((filter) {
+                      final isSelected = _selectedFilter == filter;
+                      return Expanded(
+                        child: GestureDetector(
+                          onTap: () => setState(() => _selectedFilter = filter),
+                          child: Container(
+                            alignment: Alignment.center,
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            decoration: BoxDecoration(
+                              color: isSelected ? AppColors.surfaceBright : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              filter,
+                              style: TextStyle(
+                                color: isSelected ? Colors.white : AppColors.onSurfaceVariantFull,
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
@@ -697,7 +703,7 @@ class _ProfileTab extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            authProvider.user?.email ?? 'admin@barber69.com',
+            authProvider.user?.email ?? 'admin@barber96.com',
             style: const TextStyle(color: AppColors.onSurfaceVariantFull),
           ),
           const SizedBox(height: 48),
